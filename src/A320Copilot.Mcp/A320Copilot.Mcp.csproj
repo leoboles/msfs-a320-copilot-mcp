@@ -6,4 +6,8 @@
     <ProjectReference Include="../A320Copilot.Bridge/A320Copilot.Bridge.csproj" />
     <ProjectReference Include="../A320Copilot.Domain/A320Copilot.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
+  </ItemGroup>
 </Project>

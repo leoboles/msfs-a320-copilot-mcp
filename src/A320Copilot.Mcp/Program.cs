@@ -1,17 +1,24 @@
 using System.Text.Json;
 using A320Copilot.Bridge;
-using A320Copilot.Domain;
+using A320Copilot.Mcp;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
-// Bootstrap executable only. MCP transport and tools will be added separately.
-if (args.Length != 1 || args[0] != "--demo")
+if (args is ["--demo"])
 {
-    Console.Error.WriteLine("Bootstrap only; MCP and SimConnect are not implemented.");
-    Console.Error.WriteLine("Usage: dotnet run --project src/A320Copilot.Mcp -- --demo");
+    Console.WriteLine(JsonSerializer.Serialize(HangarScenario.Create(),
+        new JsonSerializerOptions { WriteIndented = true }));
+    return 0;
+}
+if (args is not ["--mock"])
+{
+    Console.Error.WriteLine("Usage: --mock (MCP stdio) or --demo (JSON). No live connection.");
     return 2;
 }
-
-IAircraftStateSource source = new DemoAircraftStateSource();
-var state = await source.ReadAsync();
-Console.WriteLine(JsonSerializer.Serialize(new { Source = "demo", State = state },
-    new JsonSerializerOptions { WriteIndented = true }));
+var builder = Host.CreateApplicationBuilder();
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
+builder.Services.AddMcpServer().WithStdioServerTransport().WithTools<AircraftTools>();
+await builder.Build().RunAsync();
 return 0;
