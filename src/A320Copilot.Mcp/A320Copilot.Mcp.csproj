@@ -3,6 +3,9 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../A320Copilot.Bridge/A320Copilot.Bridge.csproj" />
     <ProjectReference Include="../A320Copilot.Domain/A320Copilot.Domain.csproj" />
   </ItemGroup>

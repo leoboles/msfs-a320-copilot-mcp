@@ -1,10 +1,10 @@
-param([string]$Dotnet = "dotnet")
+param([string]$Dotnet = "dotnet", [ValidateSet("Mock", "Real", "Settings")] [string]$Mode = "Mock")
 $ErrorActionPreference = "Stop"
 $dll = Join-Path $PSScriptRoot "../src/A320Copilot.Mcp/bin/Release/net10.0/A320Copilot.Mcp.dll"
 $info = [System.Diagnostics.ProcessStartInfo]::new()
 $info.FileName = $Dotnet
 $info.ArgumentList.Add((Resolve-Path $dll).Path)
-$info.ArgumentList.Add("--mock")
+if ($Mode -ne "Settings") { $info.ArgumentList.Add("--" + $Mode.ToLowerInvariant()) }
 $info.UseShellExecute = $false
 $info.RedirectStandardInput = $true
 $info.RedirectStandardOutput = $true
@@ -30,6 +30,14 @@ try {
     if ("get_aircraft_state" -notin $list.result.tools.name) { throw "Missing tool" }
     $call = Send-Request @{ jsonrpc="2.0"; id=3; method="tools/call"; params=@{
         name="get_aircraft_state"; arguments=@{} } }
+    if ($Mode -eq "Real") {
+        if (-not $call.result.isError -or
+            $call.result.content[0].text -notlike "*SimConnect integration is not implemented*") {
+            throw "Expected explicit real-mode unavailable error"
+        }
+        Write-Output "Real mode reports unavailable telemetry without mock fallback."
+        return
+    }
     if ($call.result.isError) { throw "Tool failed" }
     $state = $call.result.content[0].text | ConvertFrom-Json
     if ($state.Source -ne "mock" -or $state.SimulatorConnected -or

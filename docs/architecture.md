@@ -24,4 +24,10 @@ O contrato é uma leitura assíncrona cancelável. A futura implementação pode
 4. Conectar a ferramenta MCP existente à fonte real, mantendo seleção explícita de modo.
 5. Acrescentar checklists e depois integração de controles, conforme requisitos.
 
-No host stdio (--mock), stdout é reservado ao protocolo e logs vão para stderr. --demo imprime JSON e encerra. Nenhum comando altera o simulador nesta base. O cenário de hangar informa Source=mock e SimulatorConnected=false; baterias, motores, APU e energia externa estão desligados, com freio de estacionamento e calços aplicados. Não há mutações do cenário.
+No host stdio, stdout é reservado ao protocolo e logs vão para stderr. --demo imprime JSON e encerra. Nenhum comando altera o simulador nesta base. O cenário de hangar informa Source=mock e SimulatorConnected=false; baterias, motores, APU e energia externa estão desligados, com freio de estacionamento e calços aplicados. Não há mutações do cenário.
+
+## Seleção de fonte
+
+TelemetrySettings valida Telemetry:Mode (Mock ou Real) no início. TelemetryReader recebe a seleção e o contrato IAircraftStateSource via injeção de dependências. Mock lê HangarScenario; Real chama SimConnectAircraftStateSource e só identifica uma resposta como real após uma leitura bem-sucedida. A implementação atual de SimConnect continua indisponível e o MCP transforma essa limitação em erro de ferramenta, sem fallback.
+
+O host carrega appsettings.json da pasta do executável, permite A320COPILOT_Telemetry__Mode e aplica --mock/--real por último. O modo fica fixo durante a sessão; alterações exigem reiniciar o servidor. Não existe ferramenta MCP que modifique essa configuração.

@@ -11,5 +11,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <ProjectReference Include="../../src/A320Copilot.Bridge/A320Copilot.Bridge.csproj" />
+    <ProjectReference Include="../../src/A320Copilot.Mcp/A320Copilot.Mcp.csproj" />
   </ItemGroup>
 </Project>

@@ -6,7 +6,7 @@ Base .NET 10 para um copiloto virtual do FlyByWire A320 no Microsoft Flight Simu
 
 A solução compila sem MSFS ou SDK SimConnect. Inclui servidor MCP stdio com a ferramenta de leitura `get_aircraft_state`, cenário fictício de um A320 desligado no hangar e limite para o futuro adaptador SimConnect.
 **Ainda não há conexão ao simulador, checklists, IA ou integração Winwing/WinControl.**
-O modo MCP exige `--mock` e sempre identifica os dados como fictícios.
+O MCP usa `Telemetry:Mode` em `appsettings.json` para escolher a fonte. O padrão é `Mock`.
 
 ## Requisitos
 
@@ -26,15 +26,36 @@ dotnet run --project src/A320Copilot.Mcp --configuration Release -- --demo
 ```
 
 A demonstração imprime JSON identificado como `mock`, com dados sintéticos.
-Para iniciar o servidor MCP stdio, execute o DLL compilado com `--mock`. Sem argumento válido, o programa termina com código 2.
+Para iniciar o servidor MCP stdio, execute o DLL compilado sem argumentos para respeitar o settings, ou use `--mock` / `--real` para sobrescrever o modo.
 O cenário é fixo: conversar sobre ligar uma bateria não altera os dados.
+
+## Escolher a fonte dos dados
+
+Edite `src/A320Copilot.Mcp/appsettings.json` e compile novamente:
+
+```json
+{
+  "Telemetry": {
+    "Mode": "Mock"
+  }
+}
+```
+
+- `Mock`: retorna o cenário fictício do avião desligado no hangar.
+- `Real`: chama o adaptador SimConnect. **A integração ainda não está implementada**, então a ferramenta retorna um erro explícito, sem substituir por dados simulados.
+
+O settings é copiado para a pasta de saída e publicação. Também é possível editar diretamente o `appsettings.json` ao lado do DLL em execução. Reinicie o processo MCP após mudar o modo; não há recarga durante uma sessão.
+
+Precedência, da maior para a menor: `--mock` ou `--real`, variável de ambiente `A320COPILOT_Telemetry__Mode`, configuração do host .NET (incluindo `appsettings.json`), padrão `Mock`. Um modo inválido encerra o servidor com código 2. `--demo` sempre imprime o cenário mock e encerra.
+
+O arquivo é carregado a partir da pasta do aplicativo, independentemente da pasta em que o cliente MCP inicia o processo. Não registre o servidor com `--mock` se quiser controlar o modo pelo settings.
 
 ## Conectar ao Codex local
 
 Após compilar, substitua o caminho abaixo pelo caminho absoluto do seu checkout:
 
 ```powershell
-codex mcp add msfs-a320-copilot-mcp -- dotnet "C:/caminho/msfs-a320-copilot-mcp/src/A320Copilot.Mcp/bin/Release/net10.0/A320Copilot.Mcp.dll" --mock
+codex mcp add msfs-a320-copilot-mcp -- dotnet "C:/caminho/msfs-a320-copilot-mcp/src/A320Copilot.Mcp/bin/Release/net10.0/A320Copilot.Mcp.dll"
 ```
 
 Abra uma nova conversa após registrar o servidor; se ele não aparecer, reinicie o aplicativo. Peça: "Use o MCP msfs-a320-copilot-mcp e consulte get_aircraft_state. Vamos praticar com o A320 fictício desligado no hangar."
