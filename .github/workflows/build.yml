@@ -1,0 +1,16 @@
+name: Build and test
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore A320Copilot.slnx
+      - run: dotnet build A320Copilot.slnx --configuration Release --no-restore
+      - run: dotnet test A320Copilot.slnx --configuration Release --no-build
+      - run: dotnet run --project src/A320Copilot.Mcp --configuration Release --no-build -- --demo

@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/A320Copilot.Domain/A320Copilot.Domain.csproj" />
+    <Project Path="src/A320Copilot.Bridge/A320Copilot.Bridge.csproj" />
+    <Project Path="src/A320Copilot.Mcp/A320Copilot.Mcp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/A320Copilot.Tests/A320Copilot.Tests.csproj" />
+  </Folder>
+</Solution>

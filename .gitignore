@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+.vs/
+.vscode/
+.idea/
+TestResults/
+*.user
+*.suo
+*.log
+.env
+.env.*
+!.env.example
+.dotnet/
+artifacts/
+# Locally installed proprietary SDK binaries
+**/Microsoft.FlightSimulator.SimConnect.dll
+**/SimConnect.dll

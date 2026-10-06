@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../A320Copilot.Domain/A320Copilot.Domain.csproj" />
+  </ItemGroup>
+</Project>
