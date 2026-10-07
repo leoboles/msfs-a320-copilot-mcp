@@ -1,6 +1,7 @@
-param([string]$Dotnet = "dotnet", [ValidateSet("Mock", "Real", "Settings")] [string]$Mode = "Mock")
+param([string]$Dotnet = "dotnet", [ValidateSet("Mock", "Real", "Settings")] [string]$Mode = "Mock",
+    [ValidateSet("Debug", "Release")] [string]$Configuration = "Release")
 $ErrorActionPreference = "Stop"
-$dll = Join-Path $PSScriptRoot "../src/A320Copilot.Mcp/bin/Release/net10.0/A320Copilot.Mcp.dll"
+$dll = Join-Path $PSScriptRoot "../src/A320Copilot.Mcp/bin/$Configuration/net10.0/A320Copilot.Mcp.dll"
 $info = [System.Diagnostics.ProcessStartInfo]::new()
 $info.FileName = $Dotnet
 $info.ArgumentList.Add((Resolve-Path $dll).Path)
@@ -28,6 +29,7 @@ try {
     $process.StandardInput.Flush()
     $list = Send-Request @{ jsonrpc="2.0"; id=2; method="tools/list"; params=@{} }
     if ("get_aircraft_state" -notin $list.result.tools.name) { throw "Missing tool" }
+    if ("get_mcdu_state" -notin $list.result.tools.name) { throw "Missing MCDU tool" }
     $call = Send-Request @{ jsonrpc="2.0"; id=3; method="tools/call"; params=@{
         name="get_aircraft_state"; arguments=@{} } }
     if ($Mode -eq "Real") {
@@ -45,6 +47,13 @@ try {
         $state.Engine1Running -or $state.Engine2Running -or
         $state.Scenario -ne "cold_and_dark_in_hangar") { throw "Unexpected state" }
     Write-Output "MCP initialize, tools/list and tools/call passed."
+    $mcdu = Send-Request @{ jsonrpc="2.0"; id=4; method="tools/call"; params=@{
+        name="get_mcdu_state"; arguments=@{} } }
+    if ($mcdu.result.isError) { throw "MCDU mock failed" }
+    $screen = $mcdu.result.content[0].text | ConvertFrom-Json
+    if ($screen.Source -ne "mock" -or -not $screen.IsMock -or
+        $screen.Left.lines.Count -ne 12) { throw "Unexpected mock MCDU" }
+    Write-Output "MCP get_mcdu_state mock passed."
 } finally {
     if (-not $process.HasExited) { $process.Kill($true) }
     $process.Dispose()

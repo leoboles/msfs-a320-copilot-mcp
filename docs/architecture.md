@@ -28,6 +28,8 @@ No host stdio, stdout é reservado ao protocolo e logs vão para stderr. --demo 
 
 ## Seleção de fonte
 
+Uma ferramenta separada, get_mcdu_state, usa SimBridgeMcduReader no modo Real para ler a tela esquerda por WebSocket. Não implementa IAircraftStateSource porque uma tela de MCDU não é telemetria geral. Cada chamada pede um update novo e descarta a conexão; erros não retornam uma tela antiga. Veja simbridge.md.
+
 TelemetrySettings valida Telemetry:Mode (Mock ou Real) no início. TelemetryReader recebe a seleção e o contrato IAircraftStateSource via injeção de dependências. Mock lê HangarScenario; Real chama SimConnectAircraftStateSource e só identifica uma resposta como real após uma leitura bem-sucedida. A implementação atual de SimConnect continua indisponível e o MCP transforma essa limitação em erro de ferramenta, sem fallback.
 
 O host carrega appsettings.json da pasta do executável, permite A320COPILOT_Telemetry__Mode e aplica --mock/--real por último. O modo fica fixo durante a sessão; alterações exigem reiniciar o servidor. Não existe ferramenta MCP que modifique essa configuração.

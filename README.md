@@ -5,7 +5,8 @@ Base .NET 10 para um copiloto virtual do FlyByWire A320 no Microsoft Flight Simu
 ## Estado atual
 
 A solução compila sem MSFS ou SDK SimConnect. Inclui servidor MCP stdio com a ferramenta de leitura `get_aircraft_state`, cenário fictício de um A320 desligado no hangar e limite para o futuro adaptador SimConnect.
-**Ainda não há conexão ao simulador, checklists, IA ou integração Winwing/WinControl.**
+**Ainda não há telemetria geral via SimConnect, checklists, IA ou integração Winwing/WinControl.**
+Há uma primeira integração SimBridge para ler a tela esquerda do MCDU por `get_mcdu_state`, ainda não validada com o simulador real. Veja [configuração e transferência para outra máquina](docs/simbridge.md).
 O MCP usa `Telemetry:Mode` em `appsettings.json` para escolher a fonte. O padrão é `Mock`.
 
 ## Requisitos
@@ -43,6 +44,7 @@ Edite `src/A320Copilot.Mcp/appsettings.json` e compile novamente:
 
 - `Mock`: retorna o cenário fictício do avião desligado no hangar.
 - `Real`: chama o adaptador SimConnect. **A integração ainda não está implementada**, então a ferramenta retorna um erro explícito, sem substituir por dados simulados.
+- Para `get_mcdu_state`, `Real` lê o SimBridge e `Mock` retorna uma tela fictícia vazia. A limitação SimConnect acima aplica-se a `get_aircraft_state`.
 
 O settings é copiado para a pasta de saída e publicação. Também é possível editar diretamente o `appsettings.json` ao lado do DLL em execução. Reinicie o processo MCP após mudar o modo; não há recarga durante uma sessão.
 
