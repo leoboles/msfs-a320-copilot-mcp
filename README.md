@@ -73,6 +73,27 @@ Run the end-to-end smoke test after building:
 pwsh -File scripts/Test-Mcp.ps1
 ```
 
+## Automated releases
+
+Push a version tag on a commit containing the release workflow:
+
+```powershell
+git tag v0.2
+git push origin v0.2
+```
+
+The Release Windows binaries workflow builds and tests the tagged commit,
+publishes a self-contained Windows x64 executable, checks its MCP tools in Mock
+mode, and creates a GitHub release with a ZIP and SHA-256 checksums.
+Tags such as v0.2, v0.2.0, and v0.2.0-beta.1 are supported; versions with a
+suffix are published as prereleases. Existing releases are never overwritten.
+The existing v0.1 release is unchanged.
+
+The workflow uses the built-in GITHUB_TOKEN; no personal token is required.
+You can run it manually from Actions to validate packaging without publishing a release.
+For a local package, run `pwsh -File scripts/Package-Release.ps1 -Version v0.2`.
+Output is written to artifacts/releases/v0.2. Use a fresh output directory for each run.
+
 ## Project structure
 
 | Project | Responsibility |

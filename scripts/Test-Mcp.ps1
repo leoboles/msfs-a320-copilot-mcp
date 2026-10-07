@@ -1,10 +1,15 @@
 param([string]$Dotnet = "dotnet", [ValidateSet("Mock", "Real", "Settings")] [string]$Mode = "Mock",
-    [ValidateSet("Debug", "Release")] [string]$Configuration = "Release")
+    [ValidateSet("Debug", "Release")] [string]$Configuration = "Release",
+    [string]$ExecutablePath)
 $ErrorActionPreference = "Stop"
 $dll = Join-Path $PSScriptRoot "../src/A320Copilot.Mcp/bin/$Configuration/net10.0/A320Copilot.Mcp.dll"
 $info = [System.Diagnostics.ProcessStartInfo]::new()
-$info.FileName = $Dotnet
-$info.ArgumentList.Add((Resolve-Path $dll).Path)
+if ($ExecutablePath) {
+    $info.FileName = (Resolve-Path $ExecutablePath).Path
+} else {
+    $info.FileName = $Dotnet
+    $info.ArgumentList.Add((Resolve-Path $dll).Path)
+}
 if ($Mode -ne "Settings") { $info.ArgumentList.Add("--" + $Mode.ToLowerInvariant()) }
 $info.UseShellExecute = $false
 $info.RedirectStandardInput = $true

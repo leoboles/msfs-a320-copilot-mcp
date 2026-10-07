@@ -1,0 +1,68 @@
+name: Release Windows binaries
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*'
+      - '[0-9]*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version for a build-only validation (no release is published)'
+        required: true
+        default: '0.0.0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      RELEASE_VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore A320Copilot.slnx
+      - name: Build
+        run: dotnet build A320Copilot.slnx -c Release --no-restore
+      - name: Test
+        run: dotnet test A320Copilot.slnx -c Release --no-build
+      - name: Package and verify executable
+        run: ./scripts/Package-Release.ps1 -Version $env:RELEASE_VERSION
+      - name: Preserve downloadable build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64-${{ env.RELEASE_VERSION }}
+          path: |
+            artifacts/releases/${{ env.RELEASE_VERSION }}/*.zip
+            artifacts/releases/${{ env.RELEASE_VERSION }}/SHA256SUMS.txt
+          if-no-files-found: error
+      - name: Publish GitHub release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $directory = Join-Path "artifacts/releases" $env:RELEASE_VERSION
+          $assets = @((Get-ChildItem $directory -Filter *.zip).FullName)
+          $assets += (Join-Path $directory "SHA256SUMS.txt")
+          $options = @("--verify-tag", "--title", "MSFS A320 Copilot MCP $env:RELEASE_VERSION", "--generate-notes", "--draft")
+          if ($env:RELEASE_VERSION.Contains("-")) { $options += "--prerelease" }
+          gh release create $env:RELEASE_VERSION @options @assets
+          if ($LASTEXITCODE -ne 0) { throw "Release creation failed; existing releases are never overwritten." }
+          gh release edit $env:RELEASE_VERSION --draft=false
+          if ($LASTEXITCODE -ne 0) { throw "Release publication failed; inspect the draft on GitHub." }
