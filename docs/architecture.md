@@ -1,35 +1,36 @@
-# Arquitetura inicial
+# Initial architecture
 
-## Dependências
+## Dependencies
 
 ```text
 A320Copilot.Mcp -> A320Copilot.Bridge -> A320Copilot.Domain
               -> A320Copilot.Domain
 A320Copilot.Tests -> A320Copilot.Bridge
+                  -> A320Copilot.Mcp
 ```
 
-Domain contém AircraftState e IAircraftStateSource. O modelo declara unidades e instante UTC para evitar interpretações ambíguas. Bridge implementa a leitura e manterá detalhes do SDK fora do domínio. Mcp expõe get_aircraft_state usando o SDK oficial MCP e transporte stdio. HangarScenario é um cenário fictício estático independente da fonte de telemetria futura.
+Domain contains AircraftState and IAircraftStateSource. The model declares units and a UTC timestamp to avoid ambiguous interpretation. Bridge handles data access and keeps SDK details outside the domain. Mcp exposes get_aircraft_state through the official MCP SDK and stdio transport. HangarScenario is a fixed fictional scenario independent of the future live telemetry source.
 
-## Comportamento atual
+## Current behavior
 
-DemoAircraftStateSource produz dados estáticos sintéticos com timestamp atual e identificação DEMO. SimConnectAircraftStateSource rejeita a leitura explicitamente. Não existe fallback automático para demonstração, nem estado fictício apresentado como conexão real.
+DemoAircraftStateSource produces static synthetic data with a current timestamp and a DEMO identifier. SimConnectAircraftStateSource explicitly rejects reads. There is no automatic fallback to demo data, and fictional state is never presented as a live connection.
 
-O contrato é uma leitura assíncrona cancelável. A futura implementação pode manter internamente uma assinatura de eventos e devolver a última amostra válida; deverá definir validade e expiração antes disso. Falhas e ausência de conexão não devem virar zeros.
+The telemetry contract is an asynchronous, cancellable read. A future implementation may subscribe to events internally and return the latest valid sample; freshness and expiration rules must be defined first. Failures and missing connections must not become zero values.
 
-## Próximas etapas
+## Next steps
 
-1. Implementar e validar conexão, recebimento e desconexão SimConnect no Windows.
-2. Mapear telemetria básica com unidades explícitas e controlar idade das amostras.
-3. Verificar variáveis específicas do FlyByWire separadamente das SimVars padrão.
-4. Conectar a ferramenta MCP existente à fonte real, mantendo seleção explícita de modo.
-5. Acrescentar checklists e depois integração de controles, conforme requisitos.
+1. Implement and validate SimConnect connection, message handling, and disconnection on Windows.
+2. Map basic telemetry with explicit units and track sample age.
+3. Verify FlyByWire-specific variables separately from standard SimVars.
+4. Connect the existing aircraft-state MCP tool to live telemetry while retaining explicit mode selection.
+5. Add checklists and then control integration as requirements develop.
 
-No host stdio, stdout é reservado ao protocolo e logs vão para stderr. --demo imprime JSON e encerra. Nenhum comando altera o simulador nesta base. O cenário de hangar informa Source=mock e SimulatorConnected=false; baterias, motores, APU e energia externa estão desligados, com freio de estacionamento e calços aplicados. Não há mutações do cenário.
+In the stdio host, stdout is reserved for protocol messages and logs go to stderr. --demo prints JSON and exits. No command changes the simulator. The hangar scenario reports Source=mock and SimulatorConnected=false; batteries, engines, APU, and external power are off, with the parking brake set and chocks installed. The scenario cannot be mutated.
 
-## Seleção de fonte
+## Data source selection
 
-Uma ferramenta separada, get_mcdu_state, usa SimBridgeMcduReader no modo Real para ler a tela esquerda por WebSocket. Não implementa IAircraftStateSource porque uma tela de MCDU não é telemetria geral. Cada chamada pede um update novo e descarta a conexão; erros não retornam uma tela antiga. Veja simbridge.md.
+The separate get_mcdu_state tool uses SimBridgeMcduReader in Real mode to read the left screen over WebSocket. It does not implement IAircraftStateSource because an MCDU screen is not general aircraft telemetry. Each call requests a fresh update and disposes the connection; failures never return a cached screen. See [SimBridge integration](simbridge.md).
 
-TelemetrySettings valida Telemetry:Mode (Mock ou Real) no início. TelemetryReader recebe a seleção e o contrato IAircraftStateSource via injeção de dependências. Mock lê HangarScenario; Real chama SimConnectAircraftStateSource e só identifica uma resposta como real após uma leitura bem-sucedida. A implementação atual de SimConnect continua indisponível e o MCP transforma essa limitação em erro de ferramenta, sem fallback.
+TelemetrySettings validates Telemetry:Mode (Mock or Real) at startup. TelemetryReader receives the mode and IAircraftStateSource through dependency injection. Mock reads HangarScenario; Real calls SimConnectAircraftStateSource and labels a response as real only after a successful read. The current SimConnect implementation remains unavailable; MCP converts this limitation into a tool error without fallback.
 
-O host carrega appsettings.json da pasta do executável, permite A320COPILOT_Telemetry__Mode e aplica --mock/--real por último. O modo fica fixo durante a sessão; alterações exigem reiniciar o servidor. Não existe ferramenta MCP que modifique essa configuração.
+The host loads appsettings.json from the executable directory, accepts A320COPILOT_Telemetry__Mode, and applies --mock/--real last. The mode is fixed for the session; configuration changes require restarting the server. No MCP tool modifies these settings.

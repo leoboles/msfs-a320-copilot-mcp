@@ -1,23 +1,26 @@
 # MSFS A320 Copilot MCP
 
-Base .NET 10 para um copiloto virtual do FlyByWire A320 no Microsoft Flight Simulator 2024.
+A .NET 10 foundation for a virtual copilot for the FlyByWire A320 in Microsoft Flight Simulator 2024.
 
-## Estado atual
+## Current status
 
-A solução compila sem MSFS ou SDK SimConnect. Inclui servidor MCP stdio com a ferramenta de leitura `get_aircraft_state`, cenário fictício de um A320 desligado no hangar e limite para o futuro adaptador SimConnect.
-**Ainda não há telemetria geral via SimConnect, checklists, IA ou integração Winwing/WinControl.**
-Há uma primeira integração SimBridge para ler a tela esquerda do MCDU por `get_mcdu_state`, ainda não validada com o simulador real. Veja [configuração e transferência para outra máquina](docs/simbridge.md).
-O MCP usa `Telemetry:Mode` em `appsettings.json` para escolher a fonte. O padrão é `Mock`.
+The solution builds without MSFS or the SimConnect SDK. It includes a stdio MCP server, the `get_aircraft_state` tool, a fictional powered-off A320 hangar scenario, and a placeholder for a future SimConnect adapter.
 
-## Requisitos
+**General SimConnect telemetry, checklists, AI integration, and Winwing/WinControl integration are not implemented.**
 
-- SDK .NET 10 estável (o runtime sozinho não basta).
-- Para a futura integração real: Windows, MSFS 2024 e SDK SimConnect oficial.
-- A primeira restauração dos testes requer acesso ao NuGet.
+An initial SimBridge integration reads the left MCDU screen through `get_mcdu_state`. It has not been validated against a live simulator. See [setup and transfer instructions](docs/simbridge.md).
 
-## Compilar e testar
+The MCP server selects its data source through `Telemetry:Mode` in `appsettings.json`. The default is `Mock`.
 
-Na raiz do repositório:
+## Requirements
+
+- A stable .NET 10 SDK (the runtime alone is insufficient for building).
+- For future SimConnect integration: Windows, MSFS 2024, and the official SimConnect SDK.
+- NuGet access for the initial test dependency restore.
+
+## Build and test
+
+From the repository root:
 
 ```powershell
 dotnet restore A320Copilot.slnx
@@ -26,13 +29,13 @@ dotnet test A320Copilot.slnx --configuration Release --no-build
 dotnet run --project src/A320Copilot.Mcp --configuration Release -- --demo
 ```
 
-A demonstração imprime JSON identificado como `mock`, com dados sintéticos.
-Para iniciar o servidor MCP stdio, execute o DLL compilado sem argumentos para respeitar o settings, ou use `--mock` / `--real` para sobrescrever o modo.
-O cenário é fixo: conversar sobre ligar uma bateria não altera os dados.
+The demo prints synthetic JSON labeled `mock`. To start the stdio MCP server, run the compiled DLL without arguments to use the settings, or use `--mock` / `--real` to override the mode.
 
-## Escolher a fonte dos dados
+The mock scenario is fixed: discussing switching on a battery does not change the data.
 
-Edite `src/A320Copilot.Mcp/appsettings.json` e compile novamente:
+## Select the data source
+
+Edit `src/A320Copilot.Mcp/appsettings.json` and rebuild:
 
 ```json
 {
@@ -42,42 +45,43 @@ Edite `src/A320Copilot.Mcp/appsettings.json` e compile novamente:
 }
 ```
 
-- `Mock`: retorna o cenário fictício do avião desligado no hangar.
-- `Real`: chama o adaptador SimConnect. **A integração ainda não está implementada**, então a ferramenta retorna um erro explícito, sem substituir por dados simulados.
-- Para `get_mcdu_state`, `Real` lê o SimBridge e `Mock` retorna uma tela fictícia vazia. A limitação SimConnect acima aplica-se a `get_aircraft_state`.
+- `Mock`: returns the fictional powered-off aircraft in a hangar.
+- `Real`: calls the SimConnect adapter for `get_aircraft_state`. **This integration is not implemented**, so the tool returns an explicit error instead of substituting mock data.
+- For `get_mcdu_state`, `Real` reads SimBridge and `Mock` returns a fictional blank screen.
 
-O settings é copiado para a pasta de saída e publicação. Também é possível editar diretamente o `appsettings.json` ao lado do DLL em execução. Reinicie o processo MCP após mudar o modo; não há recarga durante uma sessão.
+The settings file is copied to the build and publish directories. You can also edit `appsettings.json` directly beside the deployed DLL. Restart the MCP process after changing the mode; settings are not reloaded during a session.
 
-Precedência, da maior para a menor: `--mock` ou `--real`, variável de ambiente `A320COPILOT_Telemetry__Mode`, configuração do host .NET (incluindo `appsettings.json`), padrão `Mock`. Um modo inválido encerra o servidor com código 2. `--demo` sempre imprime o cenário mock e encerra.
+Precedence, from highest to lowest: `--mock` or `--real`, the `A320COPILOT_Telemetry__Mode` environment variable, .NET host configuration (including `appsettings.json`), and the `Mock` default. An invalid mode exits with code 2. `--demo` always prints the mock scenario and exits.
 
-O arquivo é carregado a partir da pasta do aplicativo, independentemente da pasta em que o cliente MCP inicia o processo. Não registre o servidor com `--mock` se quiser controlar o modo pelo settings.
+The file is loaded from the application directory regardless of the client's working directory. Do not register the server with `--mock` if you want the settings file to control the mode.
 
-## Conectar ao Codex local
+## Connect to local Codex
 
-Após compilar, substitua o caminho abaixo pelo caminho absoluto do seu checkout:
+After building, replace the example path with the absolute path to your checkout:
 
 ```powershell
-codex mcp add msfs-a320-copilot-mcp -- dotnet "C:/caminho/msfs-a320-copilot-mcp/src/A320Copilot.Mcp/bin/Release/net10.0/A320Copilot.Mcp.dll"
+codex mcp add msfs-a320-copilot-mcp -- dotnet "C:/path/to/msfs-a320-copilot-mcp/src/A320Copilot.Mcp/bin/Release/net10.0/A320Copilot.Mcp.dll"
 ```
 
-Abra uma nova conversa após registrar o servidor; se ele não aparecer, reinicie o aplicativo. Peça: "Use o MCP msfs-a320-copilot-mcp e consulte get_aircraft_state. Vamos praticar com o A320 fictício desligado no hangar."
-O servidor usa stdout exclusivamente para MCP e stderr para logs.
+Open a new conversation after registering the server. If it does not appear, restart the application. Example request: "Use the msfs-a320-copilot-mcp server and call get_aircraft_state. Let's practice with the fictional powered-off A320 in the hangar."
 
-Teste de ponta a ponta após a compilação:
+The server reserves stdout for MCP messages and sends logs to stderr.
+
+Run the end-to-end smoke test after building:
 
 ```powershell
 pwsh -File scripts/Test-Mcp.ps1
 ```
 
-## Organização
+## Project structure
 
-| Projeto | Responsabilidade |
+| Project | Responsibility |
 | --- | --- |
-| A320Copilot.Domain | Modelo e contrato de leitura, sem dependências externas |
-| A320Copilot.Bridge | Fontes de telemetria; futuro adaptador SimConnect |
-| A320Copilot.Mcp | Servidor MCP stdio e demonstração JSON |
-| A320Copilot.Tests | Testes dos contratos e comportamento das fontes |
+| A320Copilot.Domain | Models and the telemetry contract, without external dependencies |
+| A320Copilot.Bridge | Telemetry sources, SimBridge MCDU reader, and future SimConnect adapter |
+| A320Copilot.Mcp | Stdio MCP server and JSON demo |
+| A320Copilot.Tests | Contract and data source behavior tests |
 
-Veja [a arquitetura](docs/architecture.md) e [o plano SimConnect](docs/simconnect.md).
+See the [architecture](docs/architecture.md) and [SimConnect integration plan](docs/simconnect.md).
 
-Uso exclusivo em simulação; não destinado à operação de aeronaves reais.
+For flight simulation only; not intended for real aircraft operations.

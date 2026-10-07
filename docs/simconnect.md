@@ -1,25 +1,25 @@
-# Plano de integração SimConnect
+# SimConnect integration plan
 
-## Ponto de extensão
+## Extension point
 
-Implemente IAircraftStateSource em SimConnectAircraftStateSource. A classe atual lança NotSupportedException e não carrega bibliotecas nativas.
+Implement IAircraftStateSource in SimConnectAircraftStateSource. The current class throws NotSupportedException and does not load native libraries.
 
-A integração real deve executar no Windows e ser validada com o SDK do MSFS 2024. Não incluímos DLLs proprietárias nem um pacote NuGet não oficial. A compatibilidade do wrapper gerenciado com .NET 10 ainda precisa ser comprovada; caso necessário, isole o adaptador em processo Windows separado.
+Live integration must run on Windows and be validated against the MSFS 2024 SDK. The repository does not include proprietary DLLs or an unofficial NuGet wrapper. Compatibility between the managed wrapper and .NET 10 still needs verification; if necessary, isolate the adapter in a separate Windows process.
 
-## Primeiro incremento
+## First increment
 
-- Abrir sessão e tratar indisponibilidade do simulador.
-- Implementar o recebimento de mensagens/eventos exigido pelo wrapper escolhido.
-- Definir e registrar estrutura de dados e unidades; solicitar amostras da aeronave do usuário.
-- Mapear título, altitude em pés, velocidade indicada em nós, proa verdadeira em graus e condição no solo.
-- Tratar encerramento, desconexão, cancelamento, liberação de recursos e amostras expiradas.
-- Validar cada campo no cockpit e adicionar testes de mapeamento sem dependência do simulador.
+- Open a session and handle an unavailable simulator.
+- Implement the message/event processing required by the selected wrapper.
+- Define and register data structures and units; request samples for the user's aircraft.
+- Map aircraft title, altitude in feet, indicated airspeed in knots, true heading in degrees, and on-ground status.
+- Handle shutdown, disconnection, cancellation, resource disposal, and expired samples.
+- Validate each field against the cockpit and add mapping tests that do not require the simulator.
 
-O mecanismo de leitura das variáveis específicas do FlyByWire será investigado depois da telemetria padrão. SimBridge e SimConnect são integrações distintas; esta base não depende de SimBridge.
+Investigate FlyByWire-specific variables after standard telemetry. SimBridge and SimConnect are separate integrations; the SimBridge MCDU reader does not replace general SimConnect telemetry.
 
-## Referências oficiais
+## Official references
 
-- [SDK SimConnect do MSFS 2024](https://docs.flightsimulator.com/msfs2024/retail/programming-apis/simconnect/simconnect-sdk/)
-- [SimConnect no MSFS 2024](https://docs.flightsimulator.com/msfs2024/retail/programming-apis/simconnect/)
+- [MSFS 2024 SimConnect SDK](https://docs.flightsimulator.com/msfs2024/retail/programming-apis/simconnect/simconnect-sdk/)
+- [SimConnect in MSFS 2024](https://docs.flightsimulator.com/msfs2024/retail/programming-apis/simconnect/)
 
-A implementação deverá seguir a documentação e os exemplos da versão do SDK instalada.
+Follow the documentation and examples for the installed SDK version.

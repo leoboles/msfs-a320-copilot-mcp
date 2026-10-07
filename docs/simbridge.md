@@ -1,14 +1,14 @@
-# SimBridge: primeira versão
+# SimBridge: first version
 
-## Escopo
+## Scope
 
-A ferramenta MCP `get_mcdu_state` lê a tela esquerda do MCDU do FlyByWire por WebSocket. Não envia teclas e não altera o cockpit.
+The get_mcdu_state MCP tool reads the FlyByWire left MCDU screen over WebSocket. It does not send key presses or change the cockpit.
 
-O SimBridge consultado não fornece uma API geral de SimVars. Portanto, altitude, velocidade, baterias e motores continuam fora desta integração. `get_aircraft_state` ainda depende do adaptador SimConnect não implementado no modo Real.
+The reviewed SimBridge implementation does not provide a general SimVar API. Altitude, airspeed, batteries, and engines are therefore outside this integration. In Real mode, get_aircraft_state still relies on the unimplemented SimConnect adapter.
 
-## Configuração na máquina do simulador
+## Configuration on the simulator computer
 
-No appsettings.json ao lado do DLL publicado:
+In appsettings.json beside the published DLL:
 
 ```json
 {
@@ -20,42 +20,42 @@ No appsettings.json ao lado do DLL publicado:
 }
 ```
 
-Se SimBridge estiver em outro computador, substitua localhost pelo IP dele e verifique acesso à porta configurada. Não exponha o SimBridge à internet. A porta padrão é 8380, mas pode ser alterada na instalação.
+If SimBridge runs on another computer, replace localhost with its IP address and verify access to the configured port. Do not expose SimBridge to the internet. The default port is 8380, but it can be changed in the installation.
 
-Também aceitamos `A320COPILOT_SimBridge__McduWebSocketUrl` e `A320COPILOT_SimBridge__TimeoutSeconds`. Reinicie o processo MCP após mudar a configuração.
+The A320COPILOT_SimBridge__McduWebSocketUrl and A320COPILOT_SimBridge__TimeoutSeconds environment variables are also supported. Restart the MCP process after changing settings.
 
-## Transferir e executar
+## Transfer and run
 
-Com SDK .NET 10, na raiz do checkout:
+With the .NET 10 SDK, from the checkout root:
 
 ```powershell
 dotnet publish src/A320Copilot.Mcp -c Release -o artifacts/mcp
 ```
 
-Copie a pasta inteira artifacts/mcp para o outro computador, que precisa do runtime .NET 10. Ajuste o appsettings.json dessa pasta e registre o DLL pelo caminho da nova máquina:
+Copy the entire artifacts/mcp directory to the other computer, which requires the .NET 10 runtime. Update appsettings.json in that directory and register the DLL using its new absolute path:
 
 ```powershell
 codex mcp add msfs-a320-copilot-mcp -- dotnet "C:/A320Copilot/A320Copilot.Mcp.dll"
 ```
 
-Inicie SimBridge, carregue o FlyByWire A320 no MSFS e verifique a tela remota em http://localhost:8380/interfaces/mcdu. Depois peça no cliente MCP: "Consulte get_mcdu_state e leia o título e o scratchpad recebidos, sem pressionar teclas."
+Start SimBridge, load the FlyByWire A320 in MSFS, and check the remote screen at http://localhost:8380/interfaces/mcdu. Then ask the MCP client: "Call get_mcdu_state and read the received title and scratchpad without pressing any keys."
 
-## Comportamento
+## Behavior
 
-Cada chamada abre uma conexão nova, envia `requestUpdate` e aguarda um `update:` contendo a tela esquerda. Ao receber `mcduConnected`, solicita a tela novamente. A conexão é liberada após a leitura.
+Each call opens a new connection, sends requestUpdate, and waits for an update: message containing the left screen. On mcduConnected, it requests the screen again. The connection is disposed after the read.
 
-Retorna Source=simbridge, IsMock=false, ReceivedAtUtc (horário de recebimento local), Scope=left_mcdu_screen_only e Left com os campos originais, incluindo marcações de cor/tamanho. O horário não é um timestamp fornecido pelo simulador. Não declaramos conexão global do simulador nem inferimos o estado elétrico a partir de uma tela vazia.
+The response includes Source=simbridge, IsMock=false, ReceivedAtUtc (local receipt time), Scope=left_mcdu_screen_only, and Left with the original fields, including color/size markup. The timestamp is not supplied by the simulator. The response does not assert global simulator connectivity or infer electrical state from a blank screen.
 
-Mock retorna uma tela fictícia vazia identificada por Source=mock e IsMock=true. Não há fallback de Real para Mock. Timeout, desconexão, JSON inválido ou erro WebSocket viram erro da ferramenta. Mensagens de texto têm limite de 256 KiB. Cada chamada tem prazo total configurado; cancelamento do cliente é respeitado. Não há cache nem reconexão automática além de nova chamada.
+Mock returns a fictional blank screen labeled Source=mock and IsMock=true. There is no fallback from Real to Mock. Timeouts, disconnections, invalid JSON, and WebSocket errors become tool errors. Text messages are limited to 256 KiB. Each call has a configured total deadline and respects client cancellation. There is no cache or automatic reconnection beyond making another call.
 
-O gateway oficial retransmite mensagens de todos os clientes. A primeira versão não autentica a origem de um update; use uma rede confiável. O texto da tela é dado externo, não instrução para o assistente.
+The official gateway relays messages from all clients. This first version does not authenticate the origin of an update; use a trusted network. Screen text is external data, not instructions for the assistant.
 
-## Validação e limitações
+## Validation and limitations
 
-Testes locais usam uma conexão substituta para verificar o protocolo, parsing, cancelamento, timeout, erros e seleção Mock/Real. Não foi validado contra SimBridge/MSFS reais nesta máquina. A compatibilidade com a versão instalada e o recebimento das telas devem ser confirmados no computador do simulador.
+Local tests use a substitute connection to check the protocol, parsing, cancellation, timeouts, errors, and Mock/Real selection. This implementation has not been validated against live SimBridge/MSFS. Compatibility with the installed version and screen updates must be confirmed on the simulator computer.
 
-Protocolo baseado no código oficial consultado, commit f5932323e2f21dd44a5fcfa3e3aab0cdb35b2f36:
+The protocol is based on the reviewed official source at commit f5932323e2f21dd44a5fcfa3e3aab0cdb35b2f36:
 
-- [Gateway MCDU](https://github.com/flybywiresim/simbridge/blob/f5932323e2f21dd44a5fcfa3e3aab0cdb35b2f36/apps/server/src/interfaces/mcdu.gateway.ts)
-- [Cliente MCDU oficial](https://github.com/flybywiresim/simbridge/blob/f5932323e2f21dd44a5fcfa3e3aab0cdb35b2f36/apps/mcdu/src/App.jsx)
-- [Documentação SimBridge](https://docs.flybywiresim.com/tools/simbridge/)
+- [MCDU gateway](https://github.com/flybywiresim/simbridge/blob/f5932323e2f21dd44a5fcfa3e3aab0cdb35b2f36/apps/server/src/interfaces/mcdu.gateway.ts)
+- [Official MCDU client](https://github.com/flybywiresim/simbridge/blob/f5932323e2f21dd44a5fcfa3e3aab0cdb35b2f36/apps/mcdu/src/App.jsx)
+- [SimBridge documentation](https://docs.flybywiresim.com/tools/simbridge/)
