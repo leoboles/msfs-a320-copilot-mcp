@@ -105,4 +105,8 @@ Output is written to artifacts/releases/v0.2. Use a fresh output directory for e
 
 See the [architecture](docs/architecture.md) and [SimConnect integration plan](docs/simconnect.md).
 
+A [future remote bridge proposal](docs/remote-bridge-proposal.md) describes
+possible mobile ChatGPT Chat access through a hosted MCP endpoint. It is a
+design proposal; the current implementation remains local.
+
 For flight simulation only; not intended for real aircraft operations.
