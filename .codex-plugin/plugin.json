@@ -1,0 +1,24 @@
+{
+  "name": "msfs-a320-copilot",
+  "version": "0.3.1",
+  "description": "Read-only FlyByWire A320 telemetry, left MCDU and guided simulator checklists on Windows x64. Downloads the pinned runtime on first start; Real mode requires local SimConnect configuration.",
+  "author": { "name": "Leo Boles", "url": "https://github.com/leoboles" },
+  "repository": "https://github.com/leoboles/msfs-a320-copilot-mcp",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "MSFS A320 Copilot",
+    "shortDescription": "Copiloto para o FlyByWire A320",
+    "longDescription": "Windows x64 only. Reads SimConnect aircraft telemetry and the left MCDU through SimBridge, and stores training checklist progress. Starts in a clearly labeled Mock mode until Real is configured. The first MCP start downloads a pinned GitHub release and verifies its SHA-256. No aircraft commands are sent.",
+    "developerName": "Leo Boles",
+    "category": "Productivity",
+    "capabilities": ["Aircraft telemetry", "Left MCDU", "Training checklists"],
+    "websiteURL": "https://github.com/leoboles/msfs-a320-copilot-mcp",
+    "defaultPrompt": ["Configure o copiloto para meu FlyByWire A320."],
+    "logo": "./assets/plugin-icon.svg",
+    "composerIcon": "./assets/plugin-icon.svg"
+  },
+  "extensions": {
+    "com.openai": { "onboardingSkill": "./skills/setup-a320-copilot/SKILL.md" }
+  }
+}

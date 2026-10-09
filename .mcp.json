@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "msfs-a320-copilot-mcp": {
+      "command": "powershell.exe",
+      "args": ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", "scripts/plugin/Start-Plugin.ps1"],
+      "cwd": ".",
+      "env_vars": ["LOCALAPPDATA", "PROCESSOR_ARCHITECTURE", "A320COPILOT_PLUGIN_HOME", "A320COPILOT_Telemetry__Mode", "A320COPILOT_SimConnect__LibraryPath", "A320COPILOT_SimBridge__McduWebSocketUrl", "A320COPILOT_Checklists__StoragePath"],
+      "startup_timeout_sec": 180,
+      "tool_timeout_sec": 30
+    }
+  }
+}

@@ -18,7 +18,20 @@ The SimBridge integration also maintains a persistent connection. `get_mcdu_stat
 
 The MCP server selects its data source through `Telemetry:Mode` in `appsettings.json`. The default is `Mock`.
 
-## Requirements
+## Install automatically in Codex (Windows x64)
+
+```powershell
+codex plugin marketplace add leoboles/msfs-a320-copilot-mcp --ref main
+codex plugin add msfs-a320-copilot@leoboles-flight-sim
+```
+
+The plugin downloads and verifies the Windows runtime on first MCP start and
+includes guided setup. Ask **"Configure o copiloto para meu FlyByWire A320."**
+It starts in fictional Mock mode; Real needs your official x64 SimConnect DLL
+and simulator, plus SimBridge for the MCDU. No .NET SDK is needed for installation.
+See [automatic installation, configuration and updates](docs/plugin-installation.md).
+
+## Requirements for building from source
 
 - A stable .NET 10 SDK (the runtime alone is insufficient for building).
 - For real telemetry: Windows x64, MSFS, and an official x64 `SimConnect.dll`. Configure its absolute path through `SimConnect:LibraryPath`; see [setup](docs/simconnect.md). No proprietary DLL is committed or redistributed.
@@ -84,7 +97,9 @@ pwsh -File scripts/Test-Mcp.ps1 -Mode Settings
 
 ## Automated releases
 
-Hosted CI runs build, unit tests and deterministic Mock/Settings smoke tests.
+Hosted CI runs build, unit tests, deterministic Mock/Settings smoke tests and
+offline plugin installer checks. Release packaging also verifies the executable
+through the plugin's Windows PowerShell launcher.
 Real integration is an explicit local test with MSFS, an official x64
 SimConnect DLL and (for MCDU) SimBridge. It fails when a live connection is absent:
 

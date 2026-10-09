@@ -29,6 +29,7 @@ Copy-Item -LiteralPath (Join-Path $root "scripts/Test-Mcp.ps1") -Destination (Jo
 $name = "msfs-a320-copilot-mcp-$packageVersion-win-x64.zip"
 $zip = Join-Path $output $name
 Compress-Archive -Path (Join-Path $publish "*") -DestinationPath $zip
+& (Join-Path $PSScriptRoot 'Test-PluginPackage.ps1') -ArchivePath $zip
 $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
 Set-Content -LiteralPath (Join-Path $output "SHA256SUMS.txt") -Value "$hash  $name" -Encoding utf8NoBOM
 Write-Output "Release package: $zip"

@@ -43,6 +43,8 @@ jobs:
         run: dotnet test A320Copilot.slnx -c Release --no-build
       - name: Package and verify executable
         run: ./scripts/Package-Release.ps1 -Version $env:RELEASE_VERSION
+      - name: Verify plugin installer without network or simulator
+        run: powershell -NoProfile -File scripts/Test-PluginInstaller.ps1
       - name: Preserve downloadable build artifacts
         uses: actions/upload-artifact@v4
         with:

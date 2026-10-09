@@ -15,4 +15,6 @@ jobs:
       - run: dotnet test A320Copilot.slnx --configuration Release --no-build
       - run: pwsh -File scripts/Test-Mcp.ps1 -Mode Mock
       - run: pwsh -File scripts/Test-Mcp.ps1 -Mode Settings
+      - name: Verify plugin installer without network or simulator
+        run: powershell -NoProfile -File scripts/Test-PluginInstaller.ps1
       - run: dotnet run --project src/A320Copilot.Mcp --configuration Release --no-build -- --demo

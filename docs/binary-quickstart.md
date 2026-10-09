@@ -1,5 +1,9 @@
 # Run the Windows x64 package
 
+For automatic installation in local Codex, use the [GitHub plugin
+guide](https://github.com/leoboles/msfs-a320-copilot-mcp/blob/main/docs/plugin-installation.md).
+The steps below describe manual ZIP installation.
+
 Extract the entire ZIP to a permanent directory, such as `C:/A320Copilot`, and
 keep all files together. The .NET runtime is included; no SDK is needed to run
 the executable. Building from source requires a .NET 10 SDK.

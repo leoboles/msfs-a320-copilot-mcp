@@ -1,0 +1,12 @@
+{
+  "name": "leoboles-flight-sim",
+  "interface": { "displayName": "Leo Boles Flight Simulation" },
+  "plugins": [
+    {
+      "name": "msfs-a320-copilot",
+      "source": { "source": "local", "path": "./" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

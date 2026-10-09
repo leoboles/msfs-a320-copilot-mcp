@@ -11,6 +11,8 @@ Use Portuguese by default. Give short, practical, one-step-at-a-time guidance. T
 
 ## Establish the current state
 
+- When this plugin needs initial setup or a change from Mock to Real, use the packaged [setup skill](../setup-a320-copilot/SKILL.md). Preserve the plugin's MCP registration.
+
 - Before saying what the aircraft is doing now, obtain a fresh read from both `get_aircraft_state` and `get_mcdu_state` when available. If MCP tools are not directly available, use the project fallback in [project-mcp.md](references/project-mcp.md).
 - Verify each response is live: `get_aircraft_state` should identify real source and connected simulator; `get_mcdu_state` should identify SimBridge and `IsMock=false`. If either says mock, errors, times out, or has no data, say exactly which reading is unavailable. Never fill gaps with remembered values.
 - Read `CapturedAtUtc` / `ReceivedAtUtc` and report when the read was made in local time when useful. The MCDU timestamp is the time received by the client, not a timestamp provided by the simulator. The MCP maintains background connections and caches while its server process runs. Check Freshness.Validity and connection state; a new call may return the same still-valid sample. A background MCP connection does not itself monitor this conversation or deliver alerts.

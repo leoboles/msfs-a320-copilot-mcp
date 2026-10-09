@@ -12,7 +12,16 @@ Call `get_capabilities` for the current field catalog and validation limits.
 
 ## Real-mode fallback
 
-If those MCP tools are unavailable directly in the active conversation, invoke from the project root:
+If the installed plugin's MCP tools are unavailable, use its setup skill and
+restart the client to restore tool access. For an explicit diagnostic on a
+machine with PowerShell 7 (`pwsh`), invoke from the plugin root:
+
+```powershell
+pwsh -File scripts/Test-Mcp.ps1 -PluginLauncher scripts/plugin/Start-Plugin.ps1 -Mode Real
+```
+
+This uses the plugin's downloaded runtime and saved configuration. It does not
+require a .NET SDK. When working with a built source checkout instead, invoke:
 
 ```powershell
 ./scripts/Test-Mcp.ps1 -Mode Real

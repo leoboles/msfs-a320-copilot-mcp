@@ -1,16 +1,23 @@
 param([string]$Dotnet = "dotnet", [ValidateSet("Mock", "Real", "Settings")] [string]$Mode = "Mock",
     [ValidateSet("Debug", "Release")] [string]$Configuration = "Release",
-    [string]$ExecutablePath, [switch]$AircraftOnly)
+    [string]$ExecutablePath, [string]$PluginLauncher, [switch]$AircraftOnly)
 $ErrorActionPreference = "Stop"
 $dll = Join-Path $PSScriptRoot "../src/A320Copilot.Mcp/bin/$Configuration/net10.0/A320Copilot.Mcp.dll"
 $info = [System.Diagnostics.ProcessStartInfo]::new()
-if ($ExecutablePath) {
+if ($ExecutablePath -and $PluginLauncher) { throw 'Choose ExecutablePath or PluginLauncher.' }
+if ($PluginLauncher) {
+    $info.FileName = 'powershell.exe'
+    foreach ($argument in @('-NoLogo', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', (Resolve-Path $PluginLauncher).Path)) {
+        $info.ArgumentList.Add($argument)
+    }
+    if ($Mode -ne 'Settings') { $info.Environment['A320COPILOT_Telemetry__Mode'] = $Mode }
+} elseif ($ExecutablePath) {
     $info.FileName = (Resolve-Path $ExecutablePath).Path
 } else {
     $info.FileName = $Dotnet
     $info.ArgumentList.Add((Resolve-Path $dll).Path)
 }
-if ($Mode -ne "Settings") { $info.ArgumentList.Add("--" + $Mode.ToLowerInvariant()) }
+if (-not $PluginLauncher -and $Mode -ne "Settings") { $info.ArgumentList.Add("--" + $Mode.ToLowerInvariant()) }
 $info.UseShellExecute = $false
 $info.RedirectStandardInput = $true
 $info.RedirectStandardOutput = $true
@@ -20,7 +27,8 @@ function Send-Request($request) {
     $process.StandardInput.WriteLine(($request | ConvertTo-Json -Depth 20 -Compress))
     $process.StandardInput.Flush()
     $read = $process.StandardOutput.ReadLineAsync()
-    if (-not $read.Wait(15000)) { throw "MCP response timed out" }
+    $waitMilliseconds = if ($PluginLauncher -and $request.method -eq 'initialize') { 180000 } else { 15000 }
+    if (-not $read.Wait($waitMilliseconds)) { throw "MCP response timed out" }
     if (-not $read.Result) { throw "MCP server closed stdout" }
     $response = $read.Result | ConvertFrom-Json
     if ($response.error) { throw ($response.error | ConvertTo-Json) }
@@ -87,6 +95,11 @@ try {
     if ($screen.Source -ne "mock" -or -not $screen.IsMock -or
         $screen.Left.lines.Count -ne 12) { throw "Unexpected mock MCDU" }
     Write-Output "MCP get_mcdu_state mock passed."
+    if ($PluginLauncher) {
+        $process.StandardInput.Close()
+        if (-not $process.WaitForExit(10000)) { throw 'Plugin did not shut down after stdin closed.' }
+        if ($process.ExitCode -ne 0) { throw "Plugin exited with code $($process.ExitCode)." }
+    }
 } finally {
     if (-not $process.HasExited) { $process.Kill($true) }
     $process.Dispose()
