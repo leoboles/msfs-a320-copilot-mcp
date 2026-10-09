@@ -59,15 +59,44 @@ public sealed class SimConnectTests
         var sample = Sample();
         sample.AsSpan(0, 256).Clear();
         Encoding.UTF8.GetBytes("Other aircraft").CopyTo(sample, 0);
-        Assert.Null(SimConnectSampleParser.Parse(sample, DateTimeOffset.UtcNow).Systems);
+        var systems = SimConnectSampleParser.Parse(sample, DateTimeOffset.UtcNow).Systems!;
+        Assert.Equal("unsupported_aircraft", systems.Validation);
+        Assert.All(systems.Overhead.Values.Concat(systems.Engines.Values).Concat(systems.Fuel.Values).Concat(systems.Controls.Values),
+            p => { Assert.Null(p.Value); Assert.Equal(FieldQuality.Unavailable, p.Quality); });
     }
 
     [Fact]
-    public void RejectsInvalidSystemData()
+    public void InvalidOptionalFieldIsUnknownWithoutDiscardingValidFields()
     {
         var sample = Sample();
         BinaryPrimitives.WriteDoubleLittleEndian(sample.AsSpan(284), double.PositiveInfinity);
-        Assert.Throws<IOException>(() => SimConnectSampleParser.Parse(sample, DateTimeOffset.UtcNow));
+        var state = SimConnectSampleParser.Parse(sample, DateTimeOffset.UtcNow);
+        Assert.Null(state.Systems!.Overhead["Battery1Auto"].Value);
+        Assert.Equal(FieldQuality.Unavailable, state.Systems.Overhead["Battery1Auto"].Quality);
+        Assert.Equal(19.25, state.Systems.Engines["Engine1N1"].Value);
+        Assert.Equal(1234.5, state.AltitudeFeet);
+    }
+
+    [Theory]
+    [InlineData("Airbus A320neo FlyByWire", true)]
+    [InlineData("FlyByWire A320", true)]
+    [InlineData("FlyByWire A32NX", true)]
+    [InlineData("Airbus A380X FlyByWire", false)]
+    [InlineData("FlyByWire A320 A380X", false)]
+    [InlineData("FlyByWire A321neo", false)]
+    [InlineData("FlyByWire", false)]
+    [InlineData("Other A320neo", false)]
+    public void AircraftTitleScreeningDoesNotAcceptOtherFlyByWireVariants(string title, bool expected)
+        => Assert.Equal(expected, AircraftCompatibility.IsA32Nx(title));
+
+    [Fact]
+    public void ZeroDoesNotCertifyLvarExistenceOrAnOffPosition()
+    {
+        var sample = Sample();
+        BinaryPrimitives.WriteDoubleLittleEndian(sample.AsSpan(284), 0);
+        var parameter = SimConnectSampleParser.Parse(sample, DateTimeOffset.UtcNow).Systems!.Overhead["Battery1Auto"];
+        Assert.Equal(0, parameter.Value);
+        Assert.Equal(FieldQuality.Unvalidated, parameter.Quality);
     }
 
     [Fact]

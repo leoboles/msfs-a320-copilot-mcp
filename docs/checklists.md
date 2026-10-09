@@ -14,7 +14,7 @@ The ordered phases are separate checklists, allowing the pilot to select the pha
 
 ## Evidence and freshness
 
-Mapped telemetry confirmation obtains a valid real FlyByWire sample through the same reader/freshness policy as get_aircraft_state, checks the expected field value, then saves sample time, monitor/session identity, field and reported value. Mock, unsupported items and mismatches cannot confirm. LVAR existence and cockpit correctness are not established simply by a zero: evidence is explicitly reported telemetry, not proof of physical operation.
+Mapped telemetry confirmation obtains a fresh real FlyByWire sample through the same reader/freshness policy as get_aircraft_state, requires Quality=known and a non-null matching field value, then saves sample time, monitor/session identity, field and reported value. Mock, unsupported items, unavailable/unvalidated/stale fields and mismatches cannot confirm. All current production system mappings are unvalidated, so use explicit source=user visual confirmation. A finite zero does not establish LVAR existence or an OFF position. See [capabilities and field quality](capabilities.md). Historical evidence is preserved and is not retroactively upgraded to validated/current state.
 
 Fire-test button state cannot establish successful visual/aural results. Engine N2 alone cannot establish successful start or absence of warnings. Clearances, doors/ground equipment and full electrical supply likewise require appropriate human confirmation. None of the tools operates aircraft controls.
 
@@ -24,7 +24,7 @@ Confirmations are historical evidence, not continuous assertions. get_checklist 
 
 Default storage: `%LOCALAPPDATA%/A320Copilot/checklists`. Configure `Checklists:StoragePath` or `A320COPILOT_Checklists__StoragePath` for a different directory. Each session has a JSON file. A shared file lock, expected revision and atomic replacement protect cooperating local MCP processes. The template is pinned in the file so an update does not silently reorder an existing session. This is local single-machine storage, not cloud synchronization; choose the same path to share across local clients.
 
-Run `scripts/Test-Checklist.ps1 -Dotnet ../.dotnet-sdk/dotnet.exe` with MSFS and SimBridge running. It writes only isolated test progress under ignored artifacts, reads live telemetry and MCDU, and checks confirmations, conflicts and persistence across process restart. It does not fill the pilot's real checklist.
+Run `scripts/Test-Checklist.ps1` with MSFS and SimBridge running; supply `-Dotnet` with your local executable path if needed. It writes only isolated test progress under ignored artifacts, reads live telemetry and MCDU, and checks quality/mismatch rejection, conflicts and persistence across process restart. It does not fill the pilot's real checklist.
 
 ## Sources
 

@@ -12,7 +12,19 @@ public sealed record AircraftState(
     public AircraftSystemsState? Systems { get; init; }
 }
 
-public sealed record AircraftParameter(double Value, string Unit, string SimVar);
+public static class FieldQuality
+{
+    public const string Known = "known";
+    public const string Unavailable = "unavailable";
+    public const string Unvalidated = "unvalidated";
+    public const string Stale = "stale";
+}
+
+public sealed record AircraftParameter(double? Value, string Unit, string SimVar)
+{
+    public string Quality { get; init; } = FieldQuality.Unvalidated;
+    public string QualityReason { get; init; } = "Variable existence and cockpit positions are not validated for the installed aircraft version.";
+}
 
 public sealed record AircraftSystemsState(
     string Validation,

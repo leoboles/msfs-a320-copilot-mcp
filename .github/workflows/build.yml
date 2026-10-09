@@ -13,7 +13,6 @@ jobs:
       - run: dotnet restore A320Copilot.slnx
       - run: dotnet build A320Copilot.slnx --configuration Release --no-restore
       - run: dotnet test A320Copilot.slnx --configuration Release --no-build
-      - run: pwsh -File scripts/Test-Mcp.ps1
+      - run: pwsh -File scripts/Test-Mcp.ps1 -Mode Mock
       - run: pwsh -File scripts/Test-Mcp.ps1 -Mode Settings
-      - run: pwsh -File scripts/Test-Mcp.ps1 -Mode Real
       - run: dotnet run --project src/A320Copilot.Mcp --configuration Release --no-build -- --demo

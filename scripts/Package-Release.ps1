@@ -18,6 +18,12 @@ New-Item -ItemType Directory -Path $output -Force | Out-Null
 & $Dotnet publish (Join-Path $root "src/A320Copilot.Mcp") -c Release -r win-x64 --self-contained true --artifacts-path (Join-Path $output "build") -o $publish "-p:Version=$buildVersion" -p:DebugType=None -p:DebugSymbols=false
 if ($LASTEXITCODE -ne 0) { throw "Publish failed." }
 Copy-Item -LiteralPath (Join-Path $root "docs/binary-quickstart.md") -Destination (Join-Path $publish "START-HERE.md")
+New-Item -ItemType Directory -Path (Join-Path $publish "docs") -Force | Out-Null
+foreach ($document in @("capabilities.md", "simconnect.md", "simbridge.md", "monitoring.md", "checklists.md", "local-validation.md")) {
+    Copy-Item -LiteralPath (Join-Path $root "docs/$document") -Destination (Join-Path $publish "docs/$document")
+}
+New-Item -ItemType Directory -Path (Join-Path $publish "scripts") -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $root "scripts/Test-Mcp.ps1") -Destination (Join-Path $publish "scripts/Test-Mcp.ps1")
 & (Join-Path $PSScriptRoot "Test-Mcp.ps1") -ExecutablePath (Join-Path $publish "A320Copilot.Mcp.exe")
 & (Join-Path $PSScriptRoot "Test-Mcp.ps1") -ExecutablePath (Join-Path $publish "A320Copilot.Mcp.exe") -Mode Settings
 $name = "msfs-a320-copilot-mcp-$packageVersion-win-x64.zip"

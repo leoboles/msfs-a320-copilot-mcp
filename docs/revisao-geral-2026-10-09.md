@@ -129,3 +129,18 @@ A voz repetiu mensagens de espera e anunciou registro sem persistência. Avaliar
 7. Executar matriz operacional e medir latência completa em sessão de voz.
 
 O MCP deve fornecer fatos, qualidade, eventos e progresso; a skill deve conduzir a cooperação e explicar cada ação. Nenhum estado do checklist autoriza automaticamente comandos à aeronave. A release publica a implementação existente e este diagnóstico, não declara resolvidos os achados.
+
+## Implementação do item 1 — 9 de outubro de 2026
+
+O primeiro incremento da ordem proposta foi implementado no repositório:
+
+- CI hospedada executa build, testes e smoke tests explícitos em Mock/Settings. O teste Real continua disponível como execução local e rejeita ausência de conexão sem substituir dados por mock.
+- O guia de distribuição agora descreve SimConnect implementado, requisitos, DLL oficial não distribuída, configuração local, SimBridge, limites e diagnóstico. O ZIP inclui instruções, documentação de capacidades/configuração e o smoke script.
+- `get_capabilities` registra os 58 campos de sistemas a partir do mesmo catálogo usado pelo leitor, com variável, unidade, origem, significado, referência e limites de validação.
+- Cada parâmetro possui `Quality` e `QualityReason`. Números finitos, inclusive zero, permanecem `unvalidated`; aeronaves incompatíveis e parâmetros opcionais não finitos retornam `unavailable` e `Value=null`. Dados básicos inválidos ainda rejeitam a amostra. Dados obsoletos/desconectados continuam rejeitados pelo monitor.
+- A identificação por título exige FlyByWire e A320/A320neo/A32NX, excluindo outras variantes. Isso não comprova identidade de versão nem existência de LVAR. Nenhum campo de sistemas foi promovido a `known` sem validação visual. O checklist exige qualidade `known` para confirmação automática; os campos atuais requerem confirmação explícita do usuário.
+- A cópia versionada da skill consulta o catálogo atual e deixa de pressupor o caminho deste computador.
+
+Validação deste incremento: build Release sem avisos/erros, 71 testes aprovados, smoke tests MCP Mock/Settings aprovados, pacote Windows x64 gerado e verificado (conteúdo, exclusão de configuração local/DLL proprietária e SHA-256). Um teste negativo com caminho deliberadamente ausente confirmou erro no modo Real sem fallback. Não houve nova validação positiva no simulador nem conferência visual de posições; a matriz operacional e a identificação precisa de versão continuam pendentes. Não foi publicada uma nova release nesta implementação.
+
+O contrato e as alterações de consumo (`Value` nullable, qualidade e confirmação de checklist) estão descritos em [capacidades e qualidade](capabilities.md). Os itens 2–7 permanecem pendentes, incluindo a validação operacional completa dos campos.

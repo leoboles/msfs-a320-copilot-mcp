@@ -6,7 +6,9 @@ A .NET 10 foundation for a virtual copilot for the FlyByWire A320 in Microsoft F
 
 The solution builds without MSFS or the SimConnect SDK. It includes a stdio MCP server, the `get_aircraft_state` tool, a fictional powered-off A320 hangar scenario, and a read-only native SimConnect adapter.
 
-Real telemetry reads aircraft title, altitude, indicated airspeed, true heading and on-ground status, plus 18 FlyByWire overhead values, 10 engine values, 12 fuel values and 18 cockpit control values. Fuel distinguishes wing-pump commands/active states from center transfer-valve commands/opening ratios. Controls include parking brake, engine masters/ignition, flaps, spoilers, transponder, exterior lights and momentary fire-test buttons. Successful numeric reads are reported values; cockpit cross-checks are still required.
+Real telemetry reads aircraft title, altitude, indicated airspeed, true heading and on-ground status, plus 18 FlyByWire overhead values, 10 engine values, 12 fuel values and 18 cockpit control values. Fuel distinguishes wing-pump commands/active states from center transfer-valve commands/opening ratios. Controls include parking brake, engine masters/ignition, flaps, spoilers, transponder, exterior lights and momentary fire-test buttons. Each system field includes `Quality` and `QualityReason`; all current mappings are `unvalidated`. Unsupported aircraft/non-finite optional fields have null values and `unavailable` quality. Zero cannot certify an OFF position or variable existence.
+
+`get_capabilities` returns the current field catalog, units, source variables, meaning and validation limits without a simulator connection. See [capabilities and field quality](docs/capabilities.md) and the [Windows package guide](docs/binary-quickstart.md). No exact FlyByWire version has full cockpit validation recorded. Automatic checklist telemetry confirmation requires `known` quality; current mappings require explicit user confirmation.
 
 Versioned simulator training checklists now persist per-session progress, explicit user or fresh telemetry evidence, skipped items and the next pending item. Five tools list templates, create/resume sessions and update progress with revision checks. See [checklist usage and limits](docs/checklists.md). Full airline SOPs, automatic flight-phase/readiness rules, embedded AI and Winwing/WinControl integration are not implemented. No tool controls the aircraft.
 
@@ -76,10 +78,20 @@ The server reserves stdout for MCP messages and sends logs to stderr.
 Run the end-to-end smoke test after building:
 
 ```powershell
-pwsh -File scripts/Test-Mcp.ps1
+pwsh -File scripts/Test-Mcp.ps1 -Mode Mock
+pwsh -File scripts/Test-Mcp.ps1 -Mode Settings
 ```
 
 ## Automated releases
+
+Hosted CI runs build, unit tests and deterministic Mock/Settings smoke tests.
+Real integration is an explicit local test with MSFS, an official x64
+SimConnect DLL and (for MCDU) SimBridge. It fails when a live connection is absent:
+
+```powershell
+pwsh -File scripts/Test-Mcp.ps1 -Mode Real -AircraftOnly
+pwsh -File scripts/Test-Mcp.ps1 -Mode Real
+```
 
 Push a version tag on a commit containing the release workflow:
 
@@ -90,7 +102,9 @@ git push origin v0.2
 
 The Release Windows binaries workflow builds and tests the tagged commit,
 publishes a self-contained Windows x64 executable, checks its MCP tools in Mock
-mode, and creates a GitHub release with a ZIP and SHA-256 checksums.
+and Settings modes, and creates a GitHub release with a ZIP and SHA-256 checksums.
+The ZIP includes `START-HERE.md`, setup/capability documentation and the MCP
+smoke script. It excludes the SDK, proprietary SimConnect DLL and local settings.
 Tags such as v0.2, v0.2.0, and v0.2.0-beta.1 are supported; versions with a
 suffix are published as prereleases. Existing releases are never overwritten.
 The existing v0.1 release is unchanged.

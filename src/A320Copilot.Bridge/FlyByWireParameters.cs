@@ -4,7 +4,29 @@ namespace A320Copilot.Bridge;
 /// LVARs use SDK 'number' units; Unit describes their documented interpretation.</summary>
 public static class FlyByWireParameters
 {
-    public sealed record Parameter(string Group, string Name, string SimVar, string Unit, string SdkUnit = "number");
+    public sealed record Parameter(string Group, string Name, string SimVar, string Unit, string SdkUnit = "number")
+    {
+        public string Field => Group + "." + Name;
+        public string Source => SimVar.StartsWith("L:", StringComparison.Ordinal) ? "simconnect_lvar" : "simconnect_simvar";
+        public string Reference => Group == "Engines"
+            ? "https://docs.flybywiresim.com/aircraft/a32nx/a32nx-api/a32nx-systems-api/"
+            : "https://docs.flybywiresim.com/aircraft/a32nx/a32nx-api/a32nx-flightdeck-api/";
+        public string Validation => "unvalidated";
+        public string? ValidatedAircraftVersion => null;
+        public string? CockpitValidationEvidence => null;
+        public string Meaning => Name switch
+        {
+            _ when Name.EndsWith("FireTestPressed", StringComparison.Ordinal) => "test_button_pressed_not_test_result",
+            _ when Name.EndsWith("Fault", StringComparison.Ordinal) => "reported_fault_indication",
+            _ when Name.EndsWith("Available", StringComparison.Ordinal) => "reported_availability",
+            _ when Name.EndsWith("Voltage", StringComparison.Ordinal) => "reported_voltage_not_bus_supply",
+            _ when Group == "Fuel" && Name.EndsWith("Active", StringComparison.Ordinal) => "wing_pump_active_not_pressure_or_flow",
+            _ when Group == "Fuel" && Name.EndsWith("Open", StringComparison.Ordinal) => "center_transfer_valve_opening_ratio",
+            _ when Group == "Fuel" && Name.StartsWith("Center", StringComparison.Ordinal) => "center_transfer_valve_command",
+            _ when Group == "Engines" => "reported_engine_parameter_not_start_completion",
+            _ => "selected_control_state_not_effective_operation"
+        };
+    }
     public static IReadOnlyList<Parameter> All { get; } = Array.AsReadOnly(new Parameter[]
     {
         O("Battery1Auto", "A32NX_OVHD_ELEC_BAT_1_PB_IS_AUTO"),

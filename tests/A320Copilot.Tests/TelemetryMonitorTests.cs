@@ -125,6 +125,28 @@ public sealed class TelemetryMonitorTests
     }
 
     [Fact]
+    public void LossAndRecoveryOfFieldAvailabilityDoNotReportAnUnknownValueAsZero()
+    {
+        var store = new TelemetryMonitorStore(new());
+        var initial = Sample();
+        var unavailable = initial with { Systems = initial.Systems! with
+        {
+            Overhead = new Dictionary<string, AircraftParameter>
+            {
+                ["Battery1Auto"] = new(null, "bool", "L:BAT")
+                { Quality = FieldQuality.Unavailable, QualityReason = "Non-finite field" }
+            }
+        }};
+        store.BeginConnection(); store.Publish(initial); store.Publish(unavailable);
+        var events = store.GetEvents().Events;
+        Assert.Contains(events, e => e.Type == "parameter_unavailable" && e.Field == "Overhead.Battery1Auto" && e.Value is null);
+        Assert.Contains(events, e => e.Field == "Overhead.Battery1Auto.Quality" && Equals(e.Value, FieldQuality.Unavailable));
+        Assert.DoesNotContain(events, e => e.Type == "parameter_changed" && e.Field == "Overhead.Battery1Auto");
+        store.Publish(initial);
+        Assert.Contains(store.GetEvents().Events, e => e.Type == "parameter_available" && e.Field == "Overhead.Battery1Auto" && Equals(e.Value, 1d));
+    }
+
+    [Fact]
     public async Task WorkerRecoversAndReusesNewConnection()
     {
         var attempts = 0;

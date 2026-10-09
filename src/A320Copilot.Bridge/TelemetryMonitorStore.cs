@@ -173,12 +173,23 @@ public sealed class TelemetryMonitorStore
         };
         if (state.Systems is not null)
         {
-            foreach (var (key, p) in state.Systems.Overhead) values["Overhead." + key] = p.Value;
-            foreach (var (key, p) in state.Systems.Engines) values["Engines." + key] = p.Value;
-            foreach (var (key, p) in state.Systems.Fuel) values["Fuel." + key] = p.Value;
-            foreach (var (key, p) in state.Systems.Controls) values["Controls." + key] = p.Value;
+            AddParameters(values, "Overhead", state.Systems.Overhead);
+            AddParameters(values, "Engines", state.Systems.Engines);
+            AddParameters(values, "Fuel", state.Systems.Fuel);
+            AddParameters(values, "Controls", state.Systems.Controls);
         }
         return values;
+    }
+
+    private static void AddParameters(Dictionary<string, object> values, string group,
+        IReadOnlyDictionary<string, AircraftParameter> parameters)
+    {
+        foreach (var (key, parameter) in parameters)
+        {
+            if (parameter.Quality is FieldQuality.Known or FieldQuality.Unvalidated && parameter.Value is double value)
+                values[group + "." + key] = value;
+            values[group + "." + key + ".Quality"] = parameter.Quality;
+        }
     }
 
     private static bool Changed(string field, object old, object value)

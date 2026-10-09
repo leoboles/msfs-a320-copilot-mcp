@@ -64,10 +64,12 @@ public sealed class ChecklistTools(ChecklistStore store, TelemetryReader reader)
                 "Controls" => snapshot.State.Systems.Controls,
                 _ => throw new InvalidOperationException("Unknown checklist telemetry group.")
             };
-            if (!group.TryGetValue(parts[1], out var value) || value.Value != item.ExpectedValue)
+            if (!group.TryGetValue(parts[1], out var value) || value.Quality != FieldQuality.Known || value.Value is null)
+                throw new InvalidOperationException("Checklist telemetry requires a known, validated field; unavailable, unvalidated or stale values require explicit user confirmation.");
+            if (value.Value != item.ExpectedValue)
                 throw new InvalidOperationException("Reported telemetry does not match this checklist item; no confirmation recorded.");
             evidence = new("telemetry", DateTimeOffset.UtcNow,
-                note + " Reported value only; not cockpit-cross-checked and not proof of physical operation.",
+                note + " Validated reported control value; not proof of physical operation.",
                 snapshot.State.CapturedAtUtc, snapshot.Freshness.MonitorId, snapshot.Freshness.SessionId, item.TelemetryField, value.Value);
         }
         return JsonSerializer.Serialize(store.Update(sessionId, expectedRevision, itemId, status, evidence));

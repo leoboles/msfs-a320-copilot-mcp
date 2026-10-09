@@ -57,12 +57,12 @@ try {
     if ($advanced.NextItem.Id -ne 'fuel_left1' -or $advanced.AllItemsConfirmed) { throw 'Invalid skip semantics' }
     $switch = $fuel.Left1Switch.Value
     $attempt = Request 'tools/call' @{name='update_checklist_item';arguments=@{sessionId=$id;expectedRevision=1;itemId='fuel_left1';status='confirmed';source='telemetry';note='Test-only check of current reported switch'}}
-    if ($switch -eq 1) {
+    if ($switch -eq 1 -and $fuel.Left1Switch.Quality -eq 'known') {
         if ($attempt.isError) { throw $attempt.content[0].text }
         $progress = $attempt.content[0].text | ConvertFrom-Json
         if ($progress.Session.Entries[1].Evidence.Source -ne 'telemetry') { throw 'Missing telemetry evidence' }
     } else {
-        if (-not $attempt.isError) { throw 'Mismatch was incorrectly confirmed' }
+        if (-not $attempt.isError) { throw 'Mismatch or unvalidated field was incorrectly confirmed' }
     }
     $before = Call 'get_checklist' @{sessionId=$id}
     $conflict = Request 'tools/call' @{name='update_checklist_item';arguments=@{sessionId=$id;expectedRevision=0;itemId='thrust_idle';status='pending';source='user';note='test'}}
@@ -74,7 +74,7 @@ try {
     $summary = @{Timestamp=[DateTimeOffset]::Now;Passed=$true;ChecklistStorage=[IO.Path]::GetFullPath($storage);Aircraft=$aircraft;Mcdu=$mcdu;ResumedChecklist=$resumed}
     $report = Join-Path $PSScriptRoot '../artifacts/checklist-live-validation.json'
     $summary | ConvertTo-Json -Depth 40 | Set-Content -LiteralPath $report -Encoding utf8
-    Write-Output 'PASS: live fuel/controls, real SimBridge, six templates, skip semantics, telemetry confirmation/mismatch rejection, revision conflict and persistence across MCP restart.'
+    Write-Output 'PASS: live fuel/controls, real SimBridge, six templates, skip semantics, telemetry quality/mismatch policy, revision conflict and persistence across MCP restart.'
     Write-Output ($fuel | ConvertTo-Json -Depth 5 -Compress)
     Write-Output ($controls | ConvertTo-Json -Depth 5 -Compress)
 } finally { Stop-Client }

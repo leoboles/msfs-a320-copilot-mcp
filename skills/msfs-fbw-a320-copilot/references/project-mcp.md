@@ -1,8 +1,8 @@
 # Projeto msfs-a320-copilot-mcp
 
-Use this skill with the local project at:
-
-`C:\Users\lbole\.codex\.chatgpt-projects\g-p-6abdcc3216488191b6bf6fa7fd61e76b\msfs-a320-copilot-mcp`
+Use the registered local MCP server. For script fallback, locate this repository
+on the current machine; do not assume another computer's checkout or SDK path.
+Call `get_capabilities` for the current field catalog and validation limits.
 
 ## Tool scope
 
@@ -15,7 +15,7 @@ Use this skill with the local project at:
 If those MCP tools are unavailable directly in the active conversation, invoke from the project root:
 
 ```powershell
-./scripts/Test-Mcp.ps1 -Dotnet ../.dotnet-sdk/dotnet.exe -Mode Real
+./scripts/Test-Mcp.ps1 -Mode Real
 ```
 
 The script starts the stdio MCP and calls both tools. It is read-only for the aircraft and MCDU. Do not edit source or settings to make a demonstration work. Report connection or timeout failures plainly; they do not prove the simulator or SimBridge is stopped.
@@ -52,7 +52,7 @@ This section supersedes the earlier dated capability record above. The project n
 
 Use list_checklist_templates, then start_checklist(templateId, flightLabel) for the phase the user wants to perform. The available phase IDs are preparation, before_start, pushback, engine_start, after_start and before_taxi. Keep the returned session ID and revision. get_checklist returns progress and the next pending item; list_checklist_sessions locates a session for explicit resumption. Do not choose an old flight merely because it was most recent.
 
-For update_checklist_item supply sessionId, expectedRevision, itemId, status (confirmed/skipped/pending), source (user/telemetry) and note. Only record user confirmation actually given; only skip on explicit user instruction. Source telemetry triggers a new valid real read and accepts only a mapped expected value. Unsupported items and mock/mismatched data cannot confirm. Fire-test success, full engine-start completion and clearances remain human-confirmed. Reopening a prerequisite clears later progress; a revision conflict requires reloading before retrying.
+For update_checklist_item supply sessionId, expectedRevision, itemId, status (confirmed/skipped/pending), source (user/telemetry) and note. Only record user confirmation actually given; only skip on explicit user instruction. Source telemetry triggers a fresh real read and requires a mapped expected value with Quality=known. All current system fields are unvalidated, so require explicit visual confirmation using source=user. Unavailable/null, unvalidated, stale, mock or mismatched data cannot confirm. Consult get_capabilities and docs/capabilities.md for current source, units, meaning and validation evidence. Fire-test success, full engine-start completion and clearances remain human-confirmed. Reopening a prerequisite clears later progress; a revision conflict requires reloading before retrying.
 
 Progress persists locally across MCP restarts, independently of the in-memory telemetry event journals. Templates are pinned per checklist session. Confirmations are historical; read current telemetry when making a current-state claim. Skipped is not confirmed, and a null next item with skipped entries is not a completed checklist. Completion of one partial phase does not establish aircraft readiness or enforce prerequisites across other phase sessions. Read docs/checklists.md for the storage override and detailed semantics. The tools never operate simulator controls.
 

@@ -35,6 +35,16 @@ try {
     $list = Send-Request @{ jsonrpc="2.0"; id=2; method="tools/list"; params=@{} }
     if ("get_aircraft_state" -notin $list.result.tools.name) { throw "Missing tool" }
     if ("get_mcdu_state" -notin $list.result.tools.name) { throw "Missing MCDU tool" }
+    if ("get_capabilities" -notin $list.result.tools.name) { throw "Missing capabilities tool" }
+    $catalog = Send-Request @{ jsonrpc="2.0"; id=5; method="tools/call"; params=@{
+        name="get_capabilities"; arguments=@{} } }
+    if ($catalog.result.isError) { throw "Capabilities failed" }
+    $capabilities = $catalog.result.content[0].text | ConvertFrom-Json
+    if ($capabilities.ContractVersion -ne 1 -or $capabilities.SystemFields.Count -ne 58 -or
+        $capabilities.AircraftControlSupported -or
+        @($capabilities.SystemFields | Where-Object { $_.Validation -ne 'unvalidated' }).Count -ne 0) {
+        throw "Unexpected capabilities catalog"
+    }
     $call = Send-Request @{ jsonrpc="2.0"; id=3; method="tools/call"; params=@{
         name="get_aircraft_state"; arguments=@{} } }
     if ($Mode -eq "Real") {
@@ -44,9 +54,10 @@ try {
             [string]::IsNullOrWhiteSpace($aircraft.State.AircraftTitle)) { throw "Unexpected real aircraft state" }
         Write-Output "MCP get_aircraft_state live passed."
         Write-Output ($aircraft | ConvertTo-Json -Depth 20)
-        if ($aircraft.State.AircraftTitle -like '*FlyByWire*') {
+        if ($aircraft.State.Systems.Validation -ne 'unsupported_aircraft') {
             if ($null -eq $aircraft.State.Systems.Overhead.Battery1Auto -or
-                $null -eq $aircraft.State.Systems.Engines.Engine1N2) { throw "Missing FlyByWire systems in MCP response" }
+                $null -eq $aircraft.State.Systems.Engines.Engine1N2 -or
+                $aircraft.State.Systems.Overhead.Battery1Auto.Quality -ne 'unvalidated') { throw "Missing FlyByWire systems/quality in MCP response" }
             Write-Output "MCP overhead and engine parameters present."
         }
         if ($AircraftOnly) { return }

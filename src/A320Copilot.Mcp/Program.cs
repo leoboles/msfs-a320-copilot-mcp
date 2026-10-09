@@ -57,6 +57,6 @@ builder.Services.AddHostedService<TelemetryMonitorService>();
 builder.Services.AddSingleton<TelemetryReader>();
 builder.Services.AddSingleton(new ChecklistStore(builder.Configuration["Checklists:StoragePath"]
     ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "A320Copilot", "checklists")));
-builder.Services.AddMcpServer().WithStdioServerTransport().WithTools<AircraftTools>().WithTools<McduTools>().WithTools<MonitorTools>().WithTools<ChecklistTools>();
+builder.Services.AddMcpServer().WithStdioServerTransport().WithTools<AircraftTools>().WithTools<McduTools>().WithTools<MonitorTools>().WithTools<ChecklistTools>().WithTools<CapabilityTools>();
 await builder.Build().RunAsync();
 return 0;

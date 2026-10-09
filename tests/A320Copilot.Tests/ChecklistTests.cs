@@ -64,7 +64,7 @@ public sealed class ChecklistTests : IDisposable
             {
                 Systems = new("test", new Dictionary<string, A320Copilot.Domain.AircraftParameter>(), new Dictionary<string, A320Copilot.Domain.AircraftParameter>())
                 {
-                    Controls = new Dictionary<string, A320Copilot.Domain.AircraftParameter> { ["ParkingBrakeLever"] = new(value, "bool", "L:A32NX_PARK_BRAKE_LEVER_POS") }
+                    Controls = new Dictionary<string, A320Copilot.Domain.AircraftParameter> { ["ParkingBrakeLever"] = new(value, "bool", "L:A32NX_PARK_BRAKE_LEVER_POS") { Quality = "known", QualityReason = "Validated synthetic test fixture" } }
                 }
             };
             using var monitor = new SimConnectAircraftStateSource(new(), () => new Session(sample));
@@ -92,6 +92,29 @@ public sealed class ChecklistTests : IDisposable
         public void RequestSample() { }
         public A320Copilot.Domain.AircraftState? ReadNext() => sample;
         public void Dispose() { }
+    }
+
+    [Theory]
+    [InlineData("unvalidated")]
+    [InlineData("unavailable")]
+    [InlineData("stale")]
+    public async Task UnknownQualityCannotConfirmEvenWhenNumericValueMatches(string quality)
+    {
+        var sample = new A320Copilot.Domain.AircraftState(DateTimeOffset.UtcNow, "FlyByWire A320", 0, 0, 0, true)
+        {
+            Systems = new("test", new Dictionary<string, A320Copilot.Domain.AircraftParameter>(), new Dictionary<string, A320Copilot.Domain.AircraftParameter>())
+            {
+                Controls = new Dictionary<string, A320Copilot.Domain.AircraftParameter>
+                { ["ParkingBrakeLever"] = new(1, "bool", "L:A32NX_PARK_BRAKE_LEVER_POS") { Quality = quality } }
+            }
+        };
+        using var monitor = new SimConnectAircraftStateSource(new(), () => new Session(sample));
+        var tools = new ChecklistTools(Store, new TelemetryReader(new() { Mode = "Real" }, monitor));
+        var started = Store.Start("preparation", "test");
+        await Assert.ThrowsAsync<ModelContextProtocol.McpException>(() => tools.Update(started.Session.Id, 0, "parking_brake", "confirmed", "telemetry", "test", default));
+        Assert.Equal(0, Store.Get(started.Session.Id).Session.Revision);
+        await tools.Update(started.Session.Id, 0, "parking_brake", "confirmed", "user", "User explicitly confirmed visually", default);
+        Assert.Equal("user", Store.Get(started.Session.Id).Session.Entries[0].Evidence!.Source);
     }
 
     [Fact]
