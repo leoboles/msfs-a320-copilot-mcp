@@ -12,6 +12,7 @@ TestResults/
 !.env.example
 .dotnet/
 artifacts/
+**/appsettings.Local.json
 # Locally installed proprietary SDK binaries
 **/Microsoft.FlightSimulator.SimConnect.dll
 **/SimConnect.dll

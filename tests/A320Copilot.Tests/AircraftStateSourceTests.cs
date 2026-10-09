@@ -16,10 +16,10 @@ public sealed class AircraftStateSourceTests
     }
 
     [Fact]
-    public async Task UnimplementedAdapterNeverReturnsFabricatedTelemetry()
+    public async Task SessionFailureNeverReturnsFabricatedTelemetry()
     {
-        await Assert.ThrowsAsync<NotSupportedException>(async () =>
-            await new SimConnectAircraftStateSource().ReadAsync());
+        using var source = new SimConnectAircraftStateSource(new(), () => throw new IOException("Unavailable"));
+        await Assert.ThrowsAsync<IOException>(async () => await source.ReadAsync());
     }
 
     [Theory]

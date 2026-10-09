@@ -26,13 +26,16 @@ public sealed class TelemetryReaderTests
         using var result = JsonDocument.Parse(await reader.ReadAsync());
         Assert.Equal("real", result.RootElement.GetProperty("Source").GetString());
         Assert.Equal(1234, result.RootElement.GetProperty("State").GetProperty("AltitudeFeet").GetDouble());
+        Assert.Equal(68.2, result.RootElement.GetProperty("State").GetProperty("Systems")
+            .GetProperty("Engines").GetProperty("Engine1N2").GetProperty("Value").GetDouble());
     }
 
     [Fact]
     public async Task RealFailureDoesNotFallBack()
     {
-        var reader = new TelemetryReader(new() { Mode = "Real" }, new SimConnectAircraftStateSource());
-        await Assert.ThrowsAsync<NotSupportedException>(async () => await reader.ReadAsync());
+        using var source = new SimConnectAircraftStateSource(new(), () => throw new IOException("Unavailable"));
+        var reader = new TelemetryReader(new() { Mode = "Real" }, source);
+        await Assert.ThrowsAsync<IOException>(async () => await reader.ReadAsync());
         var exception = await Assert.ThrowsAsync<ModelContextProtocol.McpException>(
             () => new AircraftTools(reader).GetAircraftState(default));
         Assert.Contains("No mock data was returned", exception.Message);
@@ -50,6 +53,13 @@ public sealed class TelemetryReaderTests
     private sealed class SampleSource : IAircraftStateSource
     {
         public ValueTask<AircraftState> ReadAsync(CancellationToken cancellationToken = default)
-            => ValueTask.FromResult(new AircraftState(DateTimeOffset.UtcNow, "test", 1234, 100, 90, false));
+            => ValueTask.FromResult(new AircraftState(DateTimeOffset.UtcNow, "test", 1234, 100, 90, false)
+            {
+                Systems = new AircraftSystemsState("test", new Dictionary<string, AircraftParameter>(),
+                    new Dictionary<string, AircraftParameter>
+                    {
+                        ["Engine1N2"] = new(68.2, "percent", "L:A32NX_ENGINE_N2:1")
+                    })
+            });
     }
 }

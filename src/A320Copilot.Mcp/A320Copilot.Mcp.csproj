@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="appsettings.Local.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../A320Copilot.Bridge/A320Copilot.Bridge.csproj" />

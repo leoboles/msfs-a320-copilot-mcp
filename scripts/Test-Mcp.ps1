@@ -1,6 +1,6 @@
 param([string]$Dotnet = "dotnet", [ValidateSet("Mock", "Real", "Settings")] [string]$Mode = "Mock",
     [ValidateSet("Debug", "Release")] [string]$Configuration = "Release",
-    [string]$ExecutablePath)
+    [string]$ExecutablePath, [switch]$AircraftOnly)
 $ErrorActionPreference = "Stop"
 $dll = Join-Path $PSScriptRoot "../src/A320Copilot.Mcp/bin/$Configuration/net10.0/A320Copilot.Mcp.dll"
 $info = [System.Diagnostics.ProcessStartInfo]::new()
@@ -38,11 +38,28 @@ try {
     $call = Send-Request @{ jsonrpc="2.0"; id=3; method="tools/call"; params=@{
         name="get_aircraft_state"; arguments=@{} } }
     if ($Mode -eq "Real") {
-        if (-not $call.result.isError -or
-            $call.result.content[0].text -notlike "*SimConnect integration is not implemented*") {
-            throw "Expected explicit real-mode unavailable error"
+        if ($call.result.isError) { throw ("Live aircraft read failed: " + $call.result.content[0].text) }
+        $aircraft = $call.result.content[0].text | ConvertFrom-Json
+        if ($aircraft.Source -ne "real" -or -not $aircraft.SimulatorConnected -or
+            [string]::IsNullOrWhiteSpace($aircraft.State.AircraftTitle)) { throw "Unexpected real aircraft state" }
+        Write-Output "MCP get_aircraft_state live passed."
+        Write-Output ($aircraft | ConvertTo-Json -Depth 20)
+        if ($aircraft.State.AircraftTitle -like '*FlyByWire*') {
+            if ($null -eq $aircraft.State.Systems.Overhead.Battery1Auto -or
+                $null -eq $aircraft.State.Systems.Engines.Engine1N2) { throw "Missing FlyByWire systems in MCP response" }
+            Write-Output "MCP overhead and engine parameters present."
         }
-        Write-Output "Real mode reports unavailable telemetry without mock fallback."
+        if ($AircraftOnly) { return }
+        $mcdu = Send-Request @{ jsonrpc="2.0"; id=4; method="tools/call"; params=@{
+            name="get_mcdu_state"; arguments=@{} } }
+        if ($mcdu.result.isError) { throw ("Live MCDU failed: " + $mcdu.result.content[0].text) }
+        $screen = $mcdu.result.content[0].text | ConvertFrom-Json
+        if ($screen.Source -ne "simbridge" -or $screen.IsMock -or
+            $screen.Scope -ne "left_mcdu_screen_only" -or $null -eq $screen.Left.lines) {
+            throw "Unexpected live MCDU state"
+        }
+        Write-Output "MCP get_mcdu_state live passed."
+        Write-Output ($screen | ConvertTo-Json -Depth 20)
         return
     }
     if ($call.result.isError) { throw "Tool failed" }

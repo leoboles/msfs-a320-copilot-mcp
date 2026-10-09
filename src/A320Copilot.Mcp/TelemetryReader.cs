@@ -23,6 +23,8 @@ public sealed class TelemetryReader
             return JsonSerializer.Serialize(HangarScenario.Create());
 
         // No fallback: a failed real read must never be replaced with mock data.
+        if (realSource is SimConnectAircraftStateSource monitor)
+            return JsonSerializer.Serialize(await monitor.ReadSnapshotAsync(cancellationToken));
         var state = await realSource.ReadAsync(cancellationToken);
         return JsonSerializer.Serialize(new { Source = "real", SimulatorConnected = true, State = state });
     }

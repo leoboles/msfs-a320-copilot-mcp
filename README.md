@@ -4,18 +4,22 @@ A .NET 10 foundation for a virtual copilot for the FlyByWire A320 in Microsoft F
 
 ## Current status
 
-The solution builds without MSFS or the SimConnect SDK. It includes a stdio MCP server, the `get_aircraft_state` tool, a fictional powered-off A320 hangar scenario, and a placeholder for a future SimConnect adapter.
+The solution builds without MSFS or the SimConnect SDK. It includes a stdio MCP server, the `get_aircraft_state` tool, a fictional powered-off A320 hangar scenario, and a read-only native SimConnect adapter.
 
-**General SimConnect telemetry, checklists, AI integration, and Winwing/WinControl integration are not implemented.**
+Real telemetry reads aircraft title, altitude, indicated airspeed, true heading and on-ground status, plus 18 FlyByWire overhead values, 10 engine values, 12 fuel values and 18 cockpit control values. Fuel distinguishes wing-pump commands/active states from center transfer-valve commands/opening ratios. Controls include parking brake, engine masters/ignition, flaps, spoilers, transponder, exterior lights and momentary fire-test buttons. Successful numeric reads are reported values; cockpit cross-checks are still required.
 
-An initial SimBridge integration reads the left MCDU screen through `get_mcdu_state`. It has not been validated against a live simulator. See [setup and transfer instructions](docs/simbridge.md).
+Versioned simulator training checklists now persist per-session progress, explicit user or fresh telemetry evidence, skipped items and the next pending item. Five tools list templates, create/resume sessions and update progress with revision checks. See [checklist usage and limits](docs/checklists.md). Full airline SOPs, automatic flight-phase/readiness rules, embedded AI and Winwing/WinControl integration are not implemented. No tool controls the aircraft.
+
+Real mode now maintains a persistent SimConnect subscription. `get_aircraft_state` returns the latest valid sample with age/session metadata and rejects stale data. `get_monitor_status` reports connection health; `get_recent_events` exposes a bounded change journal with cursors. See [monitoring behavior and tests](docs/monitoring.md).
+
+The SimBridge integration also maintains a persistent connection. `get_mcdu_state` returns the latest valid left MCDU screen with freshness metadata; `get_mcdu_status` reports its connection and `get_recent_mcdu_events` returns only changed fields and lifecycle events. Unchanged screens generate no screen-change events. Live reads and repeated background refreshes were confirmed locally. See [setup, settings and event polling](docs/simbridge.md) and [local validation](docs/local-validation.md).
 
 The MCP server selects its data source through `Telemetry:Mode` in `appsettings.json`. The default is `Mock`.
 
 ## Requirements
 
 - A stable .NET 10 SDK (the runtime alone is insufficient for building).
-- For future SimConnect integration: Windows, MSFS 2024, and the official SimConnect SDK.
+- For real telemetry: Windows x64, MSFS, and an official x64 `SimConnect.dll`. Configure its absolute path through `SimConnect:LibraryPath`; see [setup](docs/simconnect.md). No proprietary DLL is committed or redistributed.
 - NuGet access for the initial test dependency restore.
 
 ## Build and test
@@ -46,10 +50,12 @@ Edit `src/A320Copilot.Mcp/appsettings.json` and rebuild:
 ```
 
 - `Mock`: returns the fictional powered-off aircraft in a hangar.
-- `Real`: calls the SimConnect adapter for `get_aircraft_state`. **This integration is not implemented**, so the tool returns an explicit error instead of substituting mock data.
+- `Real`: calls the SimConnect adapter for `get_aircraft_state`. Missing DLL, simulator connection errors and timeouts produce explicit errors without substituting mock data.
 - For `get_mcdu_state`, `Real` reads SimBridge and `Mock` returns a fictional blank screen.
 
 The settings file is copied to the build and publish directories. You can also edit `appsettings.json` directly beside the deployed DLL. Restart the MCP process after changing the mode; settings are not reloaded during a session.
+
+An optional `appsettings.Local.json` overrides base settings before environment variables and CLI mode selection. It is ignored by Git and copied to build output, but excluded from publishing. Use it for this computer's SimConnect DLL path.
 
 Precedence, from highest to lowest: `--mock` or `--real`, the `A320COPILOT_Telemetry__Mode` environment variable, .NET host configuration (including `appsettings.json`), and the `Mock` default. An invalid mode exits with code 2. `--demo` always prints the mock scenario and exits.
 
@@ -99,7 +105,7 @@ Output is written to artifacts/releases/v0.2. Use a fresh output directory for e
 | Project | Responsibility |
 | --- | --- |
 | A320Copilot.Domain | Models and the telemetry contract, without external dependencies |
-| A320Copilot.Bridge | Telemetry sources, SimBridge MCDU reader, and future SimConnect adapter |
+| A320Copilot.Bridge | Telemetry sources, SimBridge MCDU reader, and native SimConnect adapter |
 | A320Copilot.Mcp | Stdio MCP server and JSON demo |
 | A320Copilot.Tests | Contract and data source behavior tests |
 

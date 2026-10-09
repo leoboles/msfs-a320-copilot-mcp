@@ -7,4 +7,18 @@ public sealed record AircraftState(
     double AltitudeFeet,
     double IndicatedAirspeedKnots,
     double HeadingDegreesTrue,
-    bool IsOnGround);
+    bool IsOnGround)
+{
+    public AircraftSystemsState? Systems { get; init; }
+}
+
+public sealed record AircraftParameter(double Value, string Unit, string SimVar);
+
+public sealed record AircraftSystemsState(
+    string Validation,
+    IReadOnlyDictionary<string, AircraftParameter> Overhead,
+    IReadOnlyDictionary<string, AircraftParameter> Engines)
+{
+    public IReadOnlyDictionary<string, AircraftParameter> Fuel { get; init; } = new Dictionary<string, AircraftParameter>();
+    public IReadOnlyDictionary<string, AircraftParameter> Controls { get; init; } = new Dictionary<string, AircraftParameter>();
+}
